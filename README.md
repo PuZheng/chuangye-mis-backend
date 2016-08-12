@@ -10,7 +10,7 @@ $ npm install
 
 ```bash
 $ node create-schema.js
-$ node init-db.js
+$ node setup-admin.js
 ```
 
 * or for development environment, create test data
@@ -18,5 +18,3 @@ $ node init-db.js
 ```bash
 $ node make-test-data.js
 ```
-
-

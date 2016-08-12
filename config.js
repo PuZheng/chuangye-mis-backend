@@ -17,6 +17,12 @@ var conf = convict({
             password: 'admin'
         }
     },
+    port: {
+        doc: 'listening port',
+        format: 'port',
+        default: 5000,
+        env: 'PORT'
+    },
 });
 
 var env = conf.get('env');
