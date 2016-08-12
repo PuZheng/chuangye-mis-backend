@@ -1,0 +1,43 @@
+{
+  "name": "chuangye-mis-backend",
+  "version": "1.0.0",
+  "description": "This backend uses postgresql, so you should setup postgresql at the beginning.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PuZheng/chuangye-mis-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PuZheng/chuangye-mis-backend/issues"
+  },
+  "homepage": "https://github.com/PuZheng/chuangye-mis-backend#readme",
+  "dependencies": {
+    "bunyan": "^1.8.1",
+    "co": "^4.6.0",
+    "convict": "^1.4.0",
+    "jsonwebtoken": "^7.1.9",
+    "koa": "^1.2.1",
+    "koa-body": "^1.4.0",
+    "koa-bunyan": "^1.0.0",
+    "koa-cors": "^0.0.16",
+    "koa-error": "^2.1.0",
+    "koa-jwt": "^1.2.0",
+    "koa-mount": "^1.3.0",
+    "koa-router": "^5.4.0",
+    "koa-slow": "^2.1.0",
+    "longjohn": "^0.2.11",
+    "mz": "^2.4.0",
+    "pg-promise": "^5.2.7",
+    "restify": "^4.1.1",
+    "restify-router": "^0.2.1"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-nodemon": "^2.1.0"
+  }
+}
