@@ -14,8 +14,8 @@ db.query(
     [admin.username, admin.password, 'admin']
 ).then(function () {
   logger.info('completed');
-  db.end();
+  pgp.end();
 }, function (e) {
   logger.error(e);
-  db.end();
+  pgp.end();
 });

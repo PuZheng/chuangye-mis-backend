@@ -12,5 +12,9 @@ db.query(
   logger.info('\n\n----------------------------------------------');
   logger.info('CLEAR DB DONE!');
   logger.info('----------------------------------------------\n\n');
+  pgp.end();
+}).catch(function (e) {
+  logger.error(e);
+  pgp.end();
 });
 

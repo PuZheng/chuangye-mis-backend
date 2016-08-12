@@ -23,6 +23,16 @@ var conf = convict({
         default: 5000,
         env: 'PORT'
     },
+    privateKey: {
+        doc: 'private key',
+        format: String,
+        default: "private.pem",
+    },
+    publicKey: {
+        doc: 'public key',
+        format: String,
+        default: "public.pem",
+    },
 });
 
 var env = conf.get('env');

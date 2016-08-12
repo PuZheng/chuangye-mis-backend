@@ -19,6 +19,8 @@ db.query(
   logger.info('\n\n----------------------------------------------');
   logger.info('MAKE TEST DATA DONE!');
   logger.info('----------------------------------------------\n\n');
+  pgp.end();
 }, function (err) {
   logger.error(err);
+  pgp.end();
 });
