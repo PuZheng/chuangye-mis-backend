@@ -1,0 +1,24 @@
+{
+  "name": "chuangye-mis-backend",
+  "version": "1.0.0",
+  "description": "This backend uses postgresql, so you should setup postgresql at the beginning.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PuZheng/chuangye-mis-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PuZheng/chuangye-mis-backend/issues"
+  },
+  "homepage": "https://github.com/PuZheng/chuangye-mis-backend#readme",
+  "dependencies": {
+    "bunyan": "^1.8.1",
+    "co": "^4.6.0",
+    "pg-promise": "^5.2.7"
+  }
+}

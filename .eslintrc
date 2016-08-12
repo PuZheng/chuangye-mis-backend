@@ -1,0 +1,19 @@
+{
+    "env": {
+        "es6": true,
+        "node": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module",
+        "ecmaFeatures": {
+        }
+    },
+    "rules": {
+        "semi": 2,
+        "no-undef": 2
+    },
+    "globals": {
+        "virtualDom": true
+    }
+}
