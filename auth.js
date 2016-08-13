@@ -36,7 +36,7 @@ var could = function could(user, need, args) {
 };
 
 router.post('/could', loginRequired, restify.bodyParser(), function couldCb(req, res, next) {
-  let tests = req.params.tests;
+  let tests = req.body.tests;
   res.json({
     data: tests.map(t => R.isArrayLike(t)? t: [t]).map(t => could(req.user, ...t))
   });
