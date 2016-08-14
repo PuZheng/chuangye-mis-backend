@@ -3,7 +3,6 @@ var router = new  Router();
 var logger = require('./logger');
 var db = require('./db.js');
 var casing = require('casing');
-
 var loginRequired = require('./login-required');
 
 router.get(
