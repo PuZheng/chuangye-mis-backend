@@ -6,7 +6,10 @@ var db = pgp(config.get('dbConnection'));
 
 db.query(
     `
-    DROP TABLE users;
+    DROP TABLE IF EXISTS users;
+    DROP TABLE IF EXISTS invoice_types;
+    DROP TYPE IF EXISTS e_entity_type;
+    DROP TYPE IF EXISTS e_material_type;
     `
 ).then(function () {
   logger.info('\n\n----------------------------------------------');

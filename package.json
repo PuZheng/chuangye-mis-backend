@@ -18,6 +18,7 @@
   "homepage": "https://github.com/PuZheng/chuangye-mis-backend#readme",
   "dependencies": {
     "bunyan": "^1.8.1",
+    "casing": "^1.0.0",
     "co": "^4.6.0",
     "convict": "^1.4.0",
     "jsonwebtoken": "^7.1.9",

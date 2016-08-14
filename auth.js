@@ -11,7 +11,7 @@ var loginRequired = require('./login-required');
 
 router.post('/login', restify.bodyParser(), function loginCb(req, res, next) {
 
-  let { username, password } = req.params;
+  let { username, password } = req.body;
   co(function *() {
     let user = yield db.oneOrNone(
       `

@@ -1,4 +1,5 @@
 var authRouter = require('./auth');
+var invoiceTypeRouter = require('./invoice-type');
 var restify = require('restify');
 var logger = require('./logger');
 var config = require('./config');
@@ -20,6 +21,7 @@ server.opts(/\.*/, function (req, res, next) {
 });
 server.use(restify.CORS());
 authRouter.applyRoutes(server, '/auth');
+invoiceTypeRouter.applyRoutes(server, '/invoice-type');
 server.on('after', restify.auditLogger({
   log: bunyan.createLogger({
     name: 'audit',

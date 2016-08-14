@@ -14,13 +14,31 @@ db.query(
       role varchar (16) NOT NULL,
       created TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() AT TIME ZONE 'utc')
     );
+    CREATE TYPE e_entity_type AS ENUM (
+      'supplier',
+      'customer',
+      'tenant',
+      'owner',
+      ''
+    );
+    CREATE TYPE e_material_type AS ENUM (
+      'outbound',
+      'inbound',
+      ''
+    );
+    CREATE TABLE invoice_types (
+      id serial PRIMARY KEY,
+      name varchar (32) NOT NULL UNIQUE,
+      vendor_type e_entity_type,
+      purchaser_type e_entity_type,
+      is_vat BOOLEAN,
+      material_type e_material_type
+    );
     `
 ).then(function () {
-  logger.info('\n\n----------------------------------------------');
-  logger.info('MAKE TEST DATA DONE!');
-  logger.info('----------------------------------------------\n\n');
+  logger.info('completed');
   pgp.end();
 }, function (err) {
-  logger.error(err);
+  logger.error(err.stack);
   pgp.end();
 });
