@@ -17,6 +17,14 @@ var invoiceTypes = [
   ['普通发票', '', 'owner', false, ''],
 ];
 
+var accountTerms = [
+  '2016-04',
+  '2016-05',
+  '2016-06',
+  '2016-07',
+  '2016-08',
+];
+
 db.tx(function (t) {
   return t.batch([
     ...accounts.map(function (a) {
@@ -35,6 +43,14 @@ db.tx(function (t) {
         ($1, $2, $3, $4, $5)
         `,
         it
+      );
+    }),
+    ...accountTerms.map(function (it) {
+      return t.none(
+        `
+        INSERT INTO  account_terms (name) values ($1)
+        `,
+        [it]
       );
     }),
   ]);

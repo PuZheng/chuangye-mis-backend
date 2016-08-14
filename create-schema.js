@@ -34,6 +34,11 @@ db.query(
       is_vat BOOLEAN,
       material_type e_material_type
     );
+    CREATE TABLE account_terms (
+      id serial PRIMARY KEY,
+      name varchar (32) NOT NULL UNIQUE,
+      created TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() AT TIME ZONE 'utc')
+    );
     `
 ).then(function () {
   logger.info('completed');

@@ -10,6 +10,7 @@ db.query(
     DROP TABLE IF EXISTS invoice_types;
     DROP TYPE IF EXISTS e_entity_type;
     DROP TYPE IF EXISTS e_material_type;
+    DROP TABLE IF EXISTS account_terms;
     `
 ).then(function () {
   logger.info('\n\n----------------------------------------------');
