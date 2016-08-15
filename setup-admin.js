@@ -1,4 +1,5 @@
-// create minimum data 
+#! /usr/bin/env node
+
 var config = require('./config.js');
 var pgp = require('pg-promise')();
 var logger = require('./logger.js');

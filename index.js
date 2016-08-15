@@ -2,6 +2,7 @@ var authRouter = require('./auth');
 var invoiceTypeRouter = require('./invoice-type');
 var accountTermRouter = require('./account-term');
 var entityRouter = require('./entity');
+var invoiceRouter = require('./invoice');
 var restify = require('restify');
 var logger = require('./logger');
 var config = require('./config');
@@ -27,6 +28,7 @@ authRouter.applyRoutes(server, '/auth');
 invoiceTypeRouter.applyRoutes(server, '/invoice-type');
 accountTermRouter.applyRoutes(server, '/account-term');
 entityRouter.applyRoutes(server, '/entity');
+invoiceRouter.applyRoutes(server, '/invoice');
 server.on('after', restify.auditLogger({
   log: bunyan.createLogger({
     name: 'audit',

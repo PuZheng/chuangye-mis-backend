@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 var config = require('./config.js');
 var pgp = require('pg-promise')();
 var db = pgp(config.get('dbConnection'));
@@ -38,17 +39,18 @@ var entities = [
   { name: '供应商2', acronym: 'gys2', type: 'supplier' },
 ];
 
+var materialSubjects = [
+  { name: '原材料1', unit: 'kg' },
+  { name: '原材料2', unit: '吨' },
+  { name: '原材料3', unit: '桶' },
+  { name: '产成品1', unit: '箱' },
+  { name: '产成品2', unit: 'kg' },
+  { name: '产成品3', unit: '吨' },
+];
+
 db.tx(function (t) {
   return t.batch([
-    ...accounts.map(function (a) {
-      return t.none(
-        `
-        INSERT INTO users (username, password, role) VALUES 
-        ($1, crypt($2, gen_salt('md5')), $3)
-        `,
-        a
-      );
-    }),
+    ...accounts.map(),
     ...invoiceTypes.map(function (it) {
       return t.none(
         `
@@ -74,7 +76,26 @@ db.tx(function (t) {
         `,
         it
       );
-    })
+    }),
+    ...materialSubjects.map(function (it) {
+      return t.none(
+        `
+        INSERT INTO material_subjects (name, unit) values
+        ($<name>, $<unit>)
+        `,
+        it
+      );
+    }),
+    ...materialNotes.map(function (it) {
+      return t.none(
+        `
+        INSERT INTO material_notes ()
+        `
+      )
+    }),
+    ...invoices.map(function (it) {
+
+    }),
   ]);
 }).then(function () {
   logger.info('completed');
