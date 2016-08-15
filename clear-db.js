@@ -8,14 +8,13 @@ db.query(
     `
     DROP TABLE IF EXISTS users;
     DROP TABLE IF EXISTS invoice_types;
+    DROP TABLE IF EXISTS account_terms;
+    DROP TABLE IF EXISTS entities;
     DROP TYPE IF EXISTS e_entity_type;
     DROP TYPE IF EXISTS e_material_type;
-    DROP TABLE IF EXISTS account_terms;
     `
 ).then(function () {
-  logger.info('\n\n----------------------------------------------');
-  logger.info('CLEAR DB DONE!');
-  logger.info('----------------------------------------------\n\n');
+  logger.info('completed');
   pgp.end();
 }).catch(function (e) {
   logger.error(e);

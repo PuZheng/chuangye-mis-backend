@@ -1,6 +1,7 @@
 var authRouter = require('./auth');
 var invoiceTypeRouter = require('./invoice-type');
 var accountTermRouter = require('./account-term');
+var entityRouter = require('./entity');
 var restify = require('restify');
 var logger = require('./logger');
 var config = require('./config');
@@ -12,6 +13,7 @@ if (config.get('env') === 'production') {
  
 var server = restify.createServer();
 server.opts(/\.*/, function (req, res, next) {
+  console.log('ok');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Response-Time, X-PINGOTHER, X-CSRF-Token, authorization');
   res.setHeader('Access-Control-Allow-Methods', '*');
@@ -24,6 +26,7 @@ server.use(restify.CORS());
 authRouter.applyRoutes(server, '/auth');
 invoiceTypeRouter.applyRoutes(server, '/invoice-type');
 accountTermRouter.applyRoutes(server, '/account-term');
+entityRouter.applyRoutes(server, '/entity');
 server.on('after', restify.auditLogger({
   log: bunyan.createLogger({
     name: 'audit',

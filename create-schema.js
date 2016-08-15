@@ -39,6 +39,13 @@ db.query(
       name varchar (32) NOT NULL UNIQUE,
       created TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() AT TIME ZONE 'utc')
     );
+    CREATE TABLE entities (
+      id serial PRIMARY KEY,
+      name varchar (32) NOT NULL UNIQUE,
+      type e_entity_type NOT NULL,
+      acronym varchar (32),
+      created TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() AT TIME ZONE 'utc')
+    );
     `
 ).then(function () {
   logger.info('completed');
