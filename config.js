@@ -17,6 +17,23 @@ var conf = convict({
             password: 'admin'
         }
     },
+    knexOpts: {
+        doc: "options for knex",
+        format: function () {
+
+        },
+        default: {
+            client: 'postgresql',
+            connection: {
+              host     : 'localhost',
+              user     : 'chuangye_mis',
+              password : 'foo',
+              database : 'chuangye_mis'
+            },
+            debug: true
+        },
+        env: "KNEX_OPTS",
+    },
     port: {
         doc: 'listening port',
         format: 'port',

@@ -14,7 +14,6 @@ if (config.get('env') === 'production') {
  
 var server = restify.createServer();
 server.opts(/\.*/, function (req, res, next) {
-  console.log('ok');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Response-Time, X-PINGOTHER, X-CSRF-Token, authorization');
   res.setHeader('Access-Control-Allow-Methods', '*');
@@ -29,13 +28,13 @@ invoiceTypeRouter.applyRoutes(server, '/invoice-type');
 accountTermRouter.applyRoutes(server, '/account-term');
 entityRouter.applyRoutes(server, '/entity');
 invoiceRouter.applyRoutes(server, '/invoice');
-server.on('after', restify.auditLogger({
-  log: bunyan.createLogger({
-    name: 'audit',
-    stream: process.stdout,
-  }),
-  body: true
-}));
+// server.on('after', restify.auditLogger({
+//   log: bunyan.createLogger({
+//     name: 'audit',
+//     stream: process.stdout,
+//   }),
+//   body: true
+// }));
 server.on('uncaughtException', function uncaughtException(req, res, route, err) {
   logger.error(err.stack);
   res.send(err);
