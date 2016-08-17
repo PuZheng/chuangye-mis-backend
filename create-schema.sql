@@ -41,7 +41,8 @@ BEGIN;
     CREATE TABLE material_subjects (
         id serial PRIMARY KEY,
         name varchar(32) NOT NULL UNIQUE,
-        unit varchar(16) NOT NULL
+        unit varchar(16) NOT NULL,
+        type e_material_type NOT NULL
     );
     CREATE TABLE invoices (
         id serial PRIMARY KEY,

@@ -25,6 +25,7 @@
     "jsonwebtoken": "^7.1.9",
     "knex": "^0.11.10",
     "longjohn": "^0.2.11",
+    "moment": "^2.14.1",
     "mz": "^2.4.0",
     "pg-promise": "^5.2.7",
     "ramda": "^0.22.1",
