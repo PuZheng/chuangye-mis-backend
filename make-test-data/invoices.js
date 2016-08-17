@@ -40,7 +40,7 @@ var makeInvoices = function () {
         is_vat: chance.bool(),
         vendor_id: vendor.id,
         purchaser_id: purchaser.id,
-        notes: chance.sentence()
+        notes: chance.sentence({ words: 10 })
       });
     }
     return db.tx(function (t) {

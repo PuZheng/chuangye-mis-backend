@@ -43,4 +43,6 @@ router.post('/could', loginRequired, restify.bodyParser(), function couldCb(req,
   next();
 });
 
-module.exports = router;
+module.exports = {
+  router,
+};

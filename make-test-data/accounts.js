@@ -10,8 +10,8 @@ var makeAccounts = function () {
   var accounts = [
     ['kj1', 'kj1', roles.ACCOUNTANT],
     ['kj2', 'kj2', roles.ACCOUNTANT],
-    ['cn1', 'cn1', roles.ACCOUNTANT],
-    ['cn2', 'cn2', roles.ACCOUNTANT],
+    ['cn1', 'cn1', roles.CASHIER],
+    ['cn2', 'cn2', roles.CASHIER],
   ];
   return db.tx(function (t) {
     return t.batch(accounts.map(function (a) {

@@ -5,5 +5,8 @@ DROP TABLE IF EXISTS account_terms CASCADE;
 DROP TABLE IF EXISTS entities CASCADE;
 DROP TABLE IF EXISTS material_notes CASCADE;
 DROP TABLE IF EXISTS material_subjects CASCADE;
+DROP TABLE IF EXISTS voucher_types;
+DROP TABLE IF EXISTS voucher_subjects;
+DROP TABLE IF EXISTS vouchers;
 DROP TYPE IF EXISTS e_entity_type;
 DROP TYPE IF EXISTS e_material_type;

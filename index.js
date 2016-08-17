@@ -1,9 +1,4 @@
 var authRouter = require('./auth');
-var invoiceTypeRouter = require('./invoice-type').router;
-var accountTermRouter = require('./account-term').router;
-var entityRouter = require('./entity').router;
-var invoiceRouter = require('./invoice').router;
-var materialSubjectRouter = require('./material-subject').router;
 var restify = require('restify');
 var logger = require('./logger');
 var config = require('./config');
@@ -24,12 +19,9 @@ server.opts(/\.*/, function (req, res, next) {
   next();
 });
 server.use(restify.CORS());
-authRouter.applyRoutes(server, '/auth');
-invoiceTypeRouter.applyRoutes(server, '/invoice-type');
-accountTermRouter.applyRoutes(server, '/account-term');
-entityRouter.applyRoutes(server, '/entity');
-invoiceRouter.applyRoutes(server, '/invoice');
-materialSubjectRouter.applyRoutes(server, '/material-subject');
+for (let app of ['auth', 'invoice-type', 'account-term', 'entity', 'invoice', 'material-subject', 'voucher-type', 'voucher-subject', 'voucher']) {
+  require('./' + app).router.applyRoutes(server, '/' + app);
+}
 // server.on('after', restify.auditLogger({
 //   log: bunyan.createLogger({
 //     name: 'audit',
