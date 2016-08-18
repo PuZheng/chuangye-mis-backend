@@ -5,6 +5,12 @@ var casing = require('casing');
 
 var router = new  Router();
 
+var getObject = function getObject(id) {
+  return knex('voucher_types').select('*').where('id', id).then(function ([o]) {
+    return casing.camelize(o);
+  });
+};
+
 router.get('/list', loginRequired, function voucherTypeList(req, res, next) {
   knex('voucher_types').select('*').then(function (list) {
     res.json({ data: casing.camelize(list) });
@@ -14,4 +20,4 @@ router.get('/list', loginRequired, function voucherTypeList(req, res, next) {
   });
 });
 
-module.exports = { router };
+module.exports = { router, getObject };

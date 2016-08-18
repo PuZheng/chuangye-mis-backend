@@ -6,6 +6,15 @@ var knex = require('./knex');
 
 var router = new  Router();
 
+var getObject = function getObject(id) {
+  return knex('voucher_subjects')
+  .select('*')
+  .where('id', id)
+  .then(function ([o]) {
+    return casing.camelize(o);
+  });
+};
+
 router.get('/list', loginRequired, function (req, res, next) {
   knex('voucher_subjects').select('*')
   .then(function (list) {
@@ -17,4 +26,4 @@ router.get('/list', loginRequired, function (req, res, next) {
   });
 });
 
-module.exports = { router };
+module.exports = { router, getObject };
