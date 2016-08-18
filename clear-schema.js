@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 var models = require('./models');
 var knex = require('./knex');
 var logger = require('./logger');

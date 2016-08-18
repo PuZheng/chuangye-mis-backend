@@ -8,12 +8,13 @@ var co = require('co');
 var cofy = require('cofy');
 var knex = require('./knex');
 var invoiceDef = require('./models').invoices;
-var materialNotesDef = require('./models').materialNotes;
+var materialNotesDef = require('./models').material_notes;
 var moment = require('moment');
 var getAccountTerm = require('./account-term').getObject;
 var getInvoiceType = require('./account-term').getObject;
 var getEntity = require('./entity').getObject;
 var getMaterialSubject = require('./material-subject').getObject;
+var getUser = require('./user').getObject;
 var R = require('ramda');
 
 router.post(
@@ -21,16 +22,17 @@ router.post(
   function (req, res, next) {
     knex.transaction(function (trx) {
       return co(function *() {
-        let invoice = R.pick(Object.keys(invoiceDef), req.body);
+        let invoice = R.pick(Object.keys(invoiceDef), casing.snakeize(req.body));
+        invoice.creator_id = req.user.id;
         let materialNotes = req.body.materialNotes;
         let [id] = yield trx
         .insert(casing.snakeize(invoice))
         .returning('id')
         .into('invoices');
         for (var mn of (materialNotes || [])) {
-          mn = R.pick(Object.keys(materialNotesDef), mn);
+          mn = R.pick(Object.keys(materialNotesDef), casing.snakeize(mn));
           mn.invoice_id = id;
-          yield trx.insert(casing.snakeize(mn)).into('material_notes');
+          yield trx.insert(mn).into('material_notes');
         }
         res.send({id});
         next();
@@ -55,6 +57,7 @@ var getObject = function (id) {
     for (var mn of invoice.materialNotes) {
       mn.materialSubject = casing.camelize(yield getMaterialSubject(mn.materialSubjectId));
     }
+    invoice.creator = yield getUser(invoice.creatorId);
     return invoice;
   });
 };
