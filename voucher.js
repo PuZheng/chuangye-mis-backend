@@ -11,6 +11,7 @@ var co = require('co');
 var getVoucherType = require('./voucher-type').getObject;
 var getVoucherSubject = require('./voucher-subject').getObject;
 var getEntity = require('./entity').getObject;
+var getUser = require('./user').getObject;
 
 var router = new  Router();
 
@@ -24,13 +25,16 @@ var getObject = function getObject(id) {
     voucher.voucherSubject = yield getVoucherSubject(voucher.voucherSubjectId);
     voucher.payer = yield getEntity(voucher.payerId);
     voucher.recipient = yield getEntity(voucher.recipientId);
+    voucher.creator = yield getUser(voucher.creatorId);
     return voucher;
   });
 };
 
 var newObject = function newObject(req, res, next) {
+  let voucher = R.pick(Object.keys(voucherDef), casing.snakeize(req.body));
+  voucher.creator_id = req.user.id;
   knex('vouchers')
-  .insert(R.pick(Object.keys(voucherDef), casing.snakeize(req.body)))
+  .insert(voucher)
   .returning('id')
   .then(function ([id]) {
     res.send({ id });

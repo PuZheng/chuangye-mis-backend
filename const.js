@@ -1,21 +1,17 @@
-const roles = {
+exports.roles = {
   ADMIN: 'admin',
   ACCOUNTANT: 'accountant',
   CASHIER: 'cashier'
 };
 
-const entityTypes = {
+exports.entityTypes = {
   SUPPLIER: 'supplier',
   CUSTOMER: 'customer',
   TENANT: 'tenant',
   OWNER: 'owner',
 };
 
-const materialTypes = {
+exports.materialTypes = {
   INBOUND: 'inbound',
   OUTBOUND: 'outbound',
-};
-
-module.exports = {
-  roles
 };

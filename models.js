@@ -13,10 +13,10 @@ exports.users = {
 exports.invoice_types = {
   id: t => t.increments('id'),
   name: t => t.string('name').unique().notNullable(),
-  vendor_type: t => t.enum('vendor_type', R.values(CONST.entityTypes)),
-  purchaser_type: t => t.enum('purchaser_type', R.values(CONST.entityTypes)),
+  vendor_type: t => t.enum('vendor_type', R.values(CONST.entityTypes).concat('')),
+  purchaser_type: t => t.enum('purchaser_type', R.values(CONST.entityTypes).concat('')),
   is_vat: t => t.boolean('is_vat'),
-  material_type: t => t.enum('material_type', R.values(CONST.materialTypes))
+  material_type: t => t.enum('material_type', R.values(CONST.materialTypes).concat('')),
 };
 
 exports.account_terms = {
@@ -42,7 +42,8 @@ exports.invoices = {
   is_vat: t => t.boolean('is_vat'),
   vendor_id: t => t.integer('vendor_id').references('entities.id'),
   purchaser_id: t => t.integer('purchaser_id').references('entities.id'),
-  notes: t => t.string('notes')
+  notes: t => t.string('notes'),
+  creator_id: t => t.integer('creator_id').references('users.id'),
 };
 
 exports.material_subjects = {
@@ -87,6 +88,7 @@ exports.vouchers = {
   payer_id: t => t.integer('payer_id').references('entities.id'),
   recipient_id: t => t.integer('recipient_id').references('entities.id'),
   notes: t => t.string('notes'),
+  creator_id: t => t.integer('creator_id').references('users.id'),
 };
 
 
