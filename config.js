@@ -7,6 +7,14 @@ var conf = convict({
         default: "development",
         env: "NODE_ENV"
     },
+    knex: {
+      debug: {
+        doc: 'if debug knex',
+        format: Boolean,
+        env: 'KNEX_DEBUG',
+        default: true
+      }
+    },
     admin: {
         doc: 'system admin account information',
         format: function () {

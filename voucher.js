@@ -1,3 +1,4 @@
+var moment = require('moment');
 var Router = require('restify-router').Router;
 var knex = require('./knex');
 var logger = require('./logger');
@@ -5,7 +6,7 @@ var loginRequired = require('./login-required');
 var casing = require('casing');
 var restify = require('restify');
 var R = require('ramda');
-var voucherDef = require('./tables').voucher;
+var voucherDef = require('./models').vouchers;
 var co = require('co');
 var getVoucherType = require('./voucher-type').getObject;
 var getVoucherSubject = require('./voucher-subject').getObject;
@@ -18,6 +19,7 @@ var getObject = function getObject(id) {
     let voucher = casing.camelize(
       (yield knex('vouchers').select('*').where('id', id))[0]
     );
+    voucher.date = moment(voucher.date).format('YYYY-MM-DD');
     voucher.voucherType = yield getVoucherType(voucher.voucherTypeId);
     voucher.voucherSubject = yield getVoucherSubject(voucher.voucherSubjectId);
     voucher.payer = yield getEntity(voucher.payerId);
