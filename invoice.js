@@ -82,7 +82,22 @@ router.get('/object/:id', loginRequired, function (req, res, next) {
 var fetchList = function (req, res, next) {
   let q = knex('invoices');
   co(function *() {
-    let totalCnt = (yield knex('invoices').count('*'))[0].count;
+    // filters
+    for (var it of [ 'invoice_type_id', 'account_term_id', 'vendor_id', 'purchaser_id' ]) {
+      req.params[it] && q.where(it, req.params[it]);
+    }
+    let date_span = req.params.date_span;
+    if (date_span) {
+      let m = date_span.match(/in_(\d+)_days/);
+      if (m) {
+        let target = moment().subtract(m[1], 'days').toDate();
+        q.where('date', '>=', target);
+      }
+    }
+    let numberLike = req.params.number__like;
+    numberLike && q.whereRaw('UPPER(number) like ?', numberLike.toUpperCase() + '%');
+    let totalCnt = (yield q.clone().count('*'))[0].count;
+
     // sort by
     if (req.params.sort_by) {
       let [col, order] = req.params.sort_by.split('.');
@@ -98,20 +113,7 @@ var fetchList = function (req, res, next) {
         }
       }
     }
-    // filters
-    for (var it of [ 'invoice_type_id', 'account_term_id', 'vendor_id', 'purchaser_id' ]) {
-      req.params[it] && q.where(it, req.params[it]);
-    }
-    let date_span = req.params.date_span;
-    if (date_span) {
-      let m = date_span.match(/in_(\d+)_days/);
-      if (m) {
-        let target = moment().subtract(m[1], 'days').toDate();
-        q.where('date', '>=', target);
-      }
-    }
-    let number = req.params.number;
-    number && q.where('number', 'like', '%' + number + '%');
+
 
     // offset & limit
     let {page, page_size} = req.params;
@@ -136,6 +138,18 @@ var fetchList = function (req, res, next) {
 };
 
 router.get('/list', loginRequired, restify.queryParser(), fetchList);
+
+router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
+  knex('invoices').whereRaw('UPPER(number) like ?', req.params.kw.toUpperCase() + '%')
+  .then(function (list) {
+    res.json({ data: list.map(it => it.number) });
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+});
 
 module.exports = {
   router,
