@@ -21,12 +21,19 @@ var getObject = function getObject(id) {
       (yield knex('vouchers').select('*').where('id', id))[0]
     );
     voucher.date = moment(voucher.date).format('YYYY-MM-DD');
-    voucher.voucherType = yield getVoucherType(voucher.voucherTypeId);
-    voucher.voucherSubject = yield getVoucherSubject(voucher.voucherSubjectId);
-    voucher.payer = yield getEntity(voucher.payerId);
-    voucher.recipient = yield getEntity(voucher.recipientId);
-    voucher.creator = yield getUser(voucher.creatorId);
-    return voucher;
+    return fullfill(voucher);
+  });
+};
+
+var fullfill = function (obj) {
+  return co(function *() {
+    obj.voucherType = yield getVoucherType(obj.voucherTypeId);
+    debugger;
+    obj.voucherSubject = yield getVoucherSubject(obj.voucherSubjectId);
+    obj.payer = yield getEntity(obj.payerId);
+    obj.recipient = yield getEntity(obj.recipientId);
+    obj.creator = yield getUser(obj.creatorId);
+    return obj;
   });
 };
 
@@ -58,6 +65,70 @@ router.get('/object/:id', loginRequired, function (req, res, next) {
   });
 });
 
+
+var fetchList = function (req, res, next) {
+  co(function *() {
+    let q = knex('vouchers');
+    // filters
+    for (var col of [
+      'voucher_type_id', 'voucher_subject_id', 'payer_id', 'recipient_id'
+    ]) {
+      let v = req.params[col];
+      if (v) {
+        q.where(col, '=', v);
+      }
+    }
+    var numberLike = req.params['number__like'];
+    if (numberLike) {
+      q.whereRaw('UPPER(number) like ?', numberLike.toUpperCase() + '%');
+    }
+    var dateSpan = req.params['date_span'];
+    if (dateSpan) {
+      let m = dateSpan.match(/in_(\d+)_days/);
+      if (m) {
+        let target = moment().subtract(m[1], 'days').toDate();
+        q.where('date', '>=', target);
+      }
+    }
+    let totalCnt = (yield q.clone().count('*'))[0].count;
+
+    // sort by
+    if (req.params.sort_by) {
+      let [col, order] = req.params.sort_by.split('.');
+      q.orderBy(col, order || 'asc');
+    }
+
+    // offset & limit
+    let {page, page_size} = req.params;
+    if (page && page_size) {
+      q.offset((req.params.page - 1) * page_size).limit(page_size);
+    }
+    let data = yield q.select('vouchers.*');
+    for (var i = 0; i < data.length; ++i) {
+      data[i] = yield fullfill(casing.camelize(data[i]));
+      data[i].date = moment(data[i].date).format('YYYY-MM-DD');
+    }
+    res.json({
+      totalCnt,
+      data,
+    });
+    next();
+  });
+};
+
+router.get('/list', loginRequired, restify.queryParser(), fetchList);
+
+router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
+  knex('vouchers').whereRaw('UPPER(number) like ?', req.params.kw.toUpperCase() + '%')
+  .then(function (list) {
+    res.json({ data: list.map(it => it.number) });
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+});
+
+
 module.exports = { router, getObject };
-
-

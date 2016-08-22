@@ -114,7 +114,6 @@ var fetchList = function (req, res, next) {
       }
     }
 
-
     // offset & limit
     let {page, page_size} = req.params;
     if (page && page_size) {
