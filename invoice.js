@@ -11,7 +11,7 @@ var invoiceDef = require('./models').invoices;
 var materialNotesDef = require('./models').material_notes;
 var moment = require('moment');
 var getAccountTerm = require('./account-term').getObject;
-var getInvoiceType = require('./account-term').getObject;
+var getInvoiceType = require('./invoice-type').getObject;
 var getEntity = require('./entity').getObject;
 var getMaterialSubject = require('./material-subject').getObject;
 var getUser = require('./user').getObject;
@@ -45,20 +45,27 @@ router.post(
   }
 );
 
-var getObject = function (id) {
+var fullfill = function (obj) {
   return co(function *() {
-    let invoice = casing.camelize((yield knex('invoices').select('*').where('id', id))[0]);
-    invoice.date = moment(invoice.date).format('YYYY-MM-DD');
-    invoice.invoiceType = casing.camelize(yield getInvoiceType(invoice.invoiceTypeId));
-    invoice.accountTerm = casing.camelize(yield getAccountTerm(invoice.accountTermId));
-    invoice.vendor = casing.camelize(yield getEntity(invoice.vendorId));
-    invoice.purchaser = casing.camelize(yield getEntity(invoice.purchaserId));
-    invoice.materialNotes = casing.camelize(yield knex('material_notes').where('invoice_id', invoice.id));
-    for (var mn of invoice.materialNotes) {
-      mn.materialSubject = casing.camelize(yield getMaterialSubject(mn.materialSubjectId));
+    obj.invoiceType = yield getInvoiceType(obj.invoiceTypeId);
+    obj.accountTerm = yield getAccountTerm(obj.accountTermId);
+    obj.vendor = yield getEntity(obj.vendorId);
+    obj.purchaser = yield getEntity(obj.purchaserId);
+    obj.materialNotes = yield knex('material_notes').where('invoice_id', obj.id);
+    for (var mn of obj.materialNotes) {
+      mn.materialSubject = yield getMaterialSubject(mn.materialSubjectId);
     }
-    invoice.creator = yield getUser(invoice.creatorId);
-    return invoice;
+    obj.creator = yield getUser(obj.creatorId);
+    return obj;
+  });
+};
+
+var getObject = function (id) {
+  return knex('invoices').select('*').where('id', id)
+  .then(function ([obj]) {
+    obj = casing.camelize(obj);
+    obj.date = moment(obj.date).format('YYYY-MM-DD');
+    return fullfill(obj);
   });
 };
 
@@ -67,6 +74,77 @@ router.get('/object/:id', loginRequired, function (req, res, next) {
     res.json(invoice);
     next();
   }).catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+});
+
+var fetchList = function (req, res, next) {
+  let q = knex('invoices');
+  co(function *() {
+    // filters
+    for (var it of [ 'invoice_type_id', 'account_term_id', 'vendor_id', 'purchaser_id' ]) {
+      req.params[it] && q.where(it, req.params[it]);
+    }
+    let date_span = req.params.date_span;
+    if (date_span) {
+      let m = date_span.match(/in_(\d+)_days/);
+      if (m) {
+        let target = moment().subtract(m[1], 'days').toDate();
+        q.where('date', '>=', target);
+      }
+    }
+    let numberLike = req.params.number__like;
+    numberLike && q.whereRaw('UPPER(number) like ?', numberLike.toUpperCase() + '%');
+    let totalCnt = (yield q.clone().count('*'))[0].count;
+
+    // sort by
+    if (req.params.sort_by) {
+      let [col, order] = req.params.sort_by.split('.');
+      order = order || 'asc';
+      switch (col) {
+        case 'account_term': {
+          q.join('account_terms', 'account_terms.id', '=', 'invoices.account_term_id').orderBy('account_terms.id');
+          break;
+        }
+        default: {
+          q.orderBy(col, order);
+          break;
+        }
+      }
+    }
+
+    // offset & limit
+    let {page, page_size} = req.params;
+    if (page && page_size) {
+      q.offset((req.params.page - 1) * page_size).limit(page_size);
+    }
+    let data = yield q.select('invoices.*');
+    for (var i = 0; i < data.length; ++i) {
+      data[i] = yield fullfill(casing.camelize(data[i]));
+      data[i].date = moment(data[i].date).format('YYYY-MM-DD');
+    }
+    res.json({
+      totalCnt,
+      data,
+    });
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+};
+
+router.get('/list', loginRequired, restify.queryParser(), fetchList);
+
+router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
+  knex('invoices').whereRaw('UPPER(number) like ?', req.params.kw.toUpperCase() + '%')
+  .then(function (list) {
+    res.json({ data: list.map(it => it.number) });
+    next();
+  })
+  .catch(function (e) {
     logger.error(e);
     next(e);
   });

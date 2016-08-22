@@ -30,7 +30,7 @@ var makeInvoices = function () {
         date: function () {
           return year + '-' + (month - 1) + '-' + chance.integer({ min: 1, max: 30 });
         }(),
-        number: chance.string(),
+        number: chance.string({ pool: '0123456789', length: 20 }),
         account_term_id: accountTerm.id,
         is_vat: chance.bool(),
         vendor_id: vendor.id,
