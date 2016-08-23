@@ -9,6 +9,5 @@ exports[roles.CASHIER] = new Set([
   'edit.voucher.object',
 ]);
 exports[roles.ADMIN] = new Set([
-  'view.invoice.list',
-  'view.voucher.list',
+  'edit.department',
 ]);

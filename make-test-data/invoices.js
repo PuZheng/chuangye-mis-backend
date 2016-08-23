@@ -1,5 +1,4 @@
 #! /usr/bin/env node
-var config = require('../config.js');
 var logger = require('../logger.js');
 var Chance = require('chance');
 var R = require('ramda');

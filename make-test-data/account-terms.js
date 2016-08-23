@@ -3,7 +3,6 @@ var config = require('../config.js');
 var pgp = require('pg-promise')();
 var db = pgp(config.get('dbConnection'));
 var logger = require('../logger.js');
-var roles = require('../roles');
 
 
 var makeAccountTerms = function () {

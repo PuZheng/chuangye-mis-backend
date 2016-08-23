@@ -19,7 +19,11 @@ server.opts(/\.*/, function (req, res, next) {
   next();
 });
 server.use(restify.CORS());
-for (let app of ['auth', 'invoice-type', 'account-term', 'entity', 'invoice', 'material-subject', 'voucher-type', 'voucher-subject', 'voucher']) {
+for (let app of [
+  'auth', 'invoice-type', 'account-term', 'entity', 'invoice', 
+'material-subject', 'voucher-type', 'voucher-subject', 'voucher',
+'department'
+]) {
   require('./' + app).router.applyRoutes(server, '/' + app);
 }
 // server.on('after', restify.auditLogger({

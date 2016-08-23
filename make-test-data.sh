@@ -6,3 +6,4 @@
 ./make-test-data/invoices.js | bunyan
 ./make-test-data/voucher-subjects.js | bunyan
 ./make-test-data/vouchers.js | bunyan
+./make-test-data/departments.js | bunyan

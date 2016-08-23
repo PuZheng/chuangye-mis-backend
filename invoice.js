@@ -5,7 +5,6 @@ var logger = require('./logger');
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var co = require('co');
-var cofy = require('cofy');
 var knex = require('./knex');
 var invoiceDef = require('./models').invoices;
 var materialNotesDef = require('./models').material_notes;

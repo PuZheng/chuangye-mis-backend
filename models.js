@@ -91,4 +91,8 @@ exports.vouchers = {
   creator_id: t => t.integer('creator_id').references('users.id'),
 };
 
-
+exports.departments = {
+  id: t => t.increments(),
+  name: t => t.string('name').unique().notNullable(),
+  acronym: t => t.string('acronym'),
+};
