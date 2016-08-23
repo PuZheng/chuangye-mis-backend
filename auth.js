@@ -20,7 +20,7 @@ router.post('/login', restify.bodyParser(), function loginCb(req, res, next) {
       [password, username]
     );
     if (!user) {
-      return next(new restify.BadRequestError('不存在该用户或者密码不正确'));
+      return next(new restify.ForbiddenError('不存在该用户或者密码不正确'));
     }
     user.token = yield sign(user);
     res.json(user);
