@@ -1,6 +1,5 @@
 var restify = require('restify');
 var Router = require('restify-router').Router;
-var router = new  Router();
 var logger = require('./logger');
 var loginRequired = require('./login-required');
 var knex = require('./knex');
@@ -8,6 +7,8 @@ var R = require('ramda');
 var departmentDef = require('./models').departments;
 var casing = require('casing');
 var co = require('co');
+
+var router = new  Router();
 
 router.post(
   '/object', loginRequired, restify.bodyParser(), 
@@ -41,7 +42,15 @@ router.get('/list', loginRequired, function (req, res, next) {
   });
 });
 
+var getObject = function (id) {
+  return knex('departments').where('id', id)
+  .then(function ([obj]) {
+    return casing.camelize(obj);
+  });
+};
+
 module.exports = {
   router,
+  getObject
 };
 
