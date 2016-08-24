@@ -7,10 +7,6 @@ var logger = require('../logger.js');
 var makeEntities = function () {
 
   var entities = [
-    { name: '承包人1', acronym: 'cbr1', type: 'tenant' },
-    { name: '承包人2', acronym: 'cbr2', type: 'tenant' },
-    { name: '承包人3', acronym: 'cbr3', type: 'tenant' },
-    { name: '承包人4', acronym: 'cbr3', type: 'tenant' },
     { name: '业主', acronym: 'yz', type: 'owner' },
     { name: '客户1', acronym: 'kh1', type: 'customer' },
     { name: '客户2', acronym: 'kh2', type: 'customer' },

@@ -96,3 +96,10 @@ exports.departments = {
   name: t => t.string('name').unique().notNullable(),
   acronym: t => t.string('acronym'),
 };
+
+exports.tenants = {
+  id: t => t.increments(),
+  entity_id: t => t.integer('entity_id').references('entities.id').notNullable(),
+  contact: t => t.string('contact'),
+  department_id: t => t.integer('department_id').references('departments.id')
+};

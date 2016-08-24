@@ -1,7 +1,6 @@
 var restify = require('restify');
 var Router = require('restify-router').Router;
 var router = new  Router();
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var knex = require('./knex');
@@ -18,7 +17,6 @@ router.get(
   '/list', loginRequired, restify.queryParser(),
   function (req, res, next) {
     let q = knex('entities').select('*');
-    let params = [];
     if (req.params.type) {
       q = q.where('type', req.params.type);
     }

@@ -1,8 +1,6 @@
-var authRouter = require('./auth');
 var restify = require('restify');
 var logger = require('./logger');
 var config = require('./config');
-var bunyan = require('bunyan');
 
 if (config.get('env') === 'production') {
   require('longjohn');
@@ -22,7 +20,7 @@ server.use(restify.CORS());
 for (let app of [
   'auth', 'invoice-type', 'account-term', 'entity', 'invoice', 
 'material-subject', 'voucher-type', 'voucher-subject', 'voucher',
-'department'
+'department', 'tenant',
 ]) {
   require('./' + app).router.applyRoutes(server, '/' + app);
 }
