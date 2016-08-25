@@ -11,4 +11,5 @@ exports[roles.CASHIER] = new Set([
 exports[roles.ADMIN] = new Set([
   'edit.department',
   'view.tenant.list',
+  'edit.tenant.object',
 ]);
