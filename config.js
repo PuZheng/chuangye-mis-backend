@@ -7,6 +7,11 @@ var conf = convict({
         default: "development",
         env: "NODE_ENV"
     },
+    dbConnection: {
+      format: String,
+      doc: 'db connection string',
+      default: 'postgres://foo_user:foo_pwd@localhost:5432/foo_db'
+    },
     knex: {
       debug: {
         doc: 'if debug knex',

@@ -7,6 +7,7 @@ var co = require('co');
 var casing = require('casing');
 var getEntity = require('./entity').getObject;
 var getDepartment = require('./department').getObject;
+var entityTypes = require('./const').entityTypes;
 
 var router = new Router();
 
@@ -75,5 +76,50 @@ var fetchList = function (req, res, next) {
 };
 
 router.get('/list', loginRequired, restify.queryParser(), fetchList);
+
+var newObject = function (req, res, next) {
+  knex.transaction(function (trx) {
+    let {
+      name,
+      acronym,
+      departmentId,
+      contact,
+    } = req.body;
+    return co(function *() {
+      let entity = (yield knex('entities')
+                    .where('name', name)
+                   .select('*'))[0];
+      if (entity) {
+        res.json(403, {
+          name: '已经存在该名称',
+        });
+        return;
+      }
+      let [entity_id] = yield trx.insert({
+        name,
+        acronym,
+        type: entityTypes.TENANT,
+      })
+      .into('entities')
+      .returning('id');
+      let [id] = yield trx
+      .insert({
+        entity_id,
+        department_id: departmentId,
+        contact: contact, 
+      })
+      .into('tenants')
+      .returning('id');
+      res.json({ id });
+      next();
+    });
+  })
+  .catch(function (e) {
+      logger.error(e);
+      next(e);
+  }); 
+};
+
+router.post('/object', loginRequired, restify.bodyParser(), newObject);
 
 module.exports = { router };
