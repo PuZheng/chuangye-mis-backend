@@ -8,14 +8,41 @@ var casing = require('casing');
 var getEntity = require('./entity').getObject;
 var getDepartment = require('./department').getObject;
 var entityTypes = require('./const').entityTypes;
+var R = require('ramda');
 
 var router = new Router();
 
-var fullfill = function *(obj) {
-  obj.entity = yield getEntity(obj.entityId);
-  obj.department = yield getDepartment(obj.departmentId);
-  return obj;
+var fullfill = function (obj) {
+  return getEntity(obj.entityId)
+  .then(function (entity) {
+    obj.entity = entity;
+  })
+  .then(function () {
+    return getDepartment(obj.departmentId);
+  })
+  .then(function (department) {
+    obj.department = department;
+    return obj;
+  });
 };
+
+router.get('/object/:id', loginRequired, function (req, res, next) {
+  knex('tenants')
+  .select('*')
+  .where('id', req.params.id)
+  .then(function ([tenant]) {
+    return fullfill(casing.camelize(tenant));
+  })
+  .then(function (tenant) {
+    console.log(tenant);
+    res.json(tenant);
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+});
 
 router.get('/hints/:kw', loginRequired, function(req, res, next) {
   let kw = req.params.kw;
@@ -80,8 +107,10 @@ router.get('/list', loginRequired, restify.queryParser(), fetchList);
 var newObject = function (req, res, next) {
   knex.transaction(function (trx) {
     let {
-      name,
-      acronym,
+      entity: {
+        name,
+        acronym,
+      },
       departmentId,
       contact,
     } = req.body;
@@ -91,7 +120,9 @@ var newObject = function (req, res, next) {
                    .select('*'))[0];
       if (entity) {
         res.json(403, {
-          name: '已经存在该名称',
+          fields: {
+            name: '已经存在该名称',
+          }
         });
         return;
       }
@@ -121,5 +152,83 @@ var newObject = function (req, res, next) {
 };
 
 router.post('/object', loginRequired, restify.bodyParser(), newObject);
+
+var updateObject = function (req, res, next) {
+  co(function *() {
+    let [tenant] = yield knex('tenants') 
+    .where('id', req.params.id)
+    .select('*');
+    if (!tenant) {
+      res.json(403, {
+        message: '不存在该承包人',
+      });
+      next();
+      return;
+    };
+
+    let {
+      entity: {
+        name,
+        acronym,
+      } = {},
+      contact,
+      departmentId
+    } = req.body;
+    if (name) {
+      let [entity] = yield knex('entities')
+      .where('name', name)
+      .select('*');
+      if (entity) {
+        res.json(403, {
+          fields: {
+            name: '已经存在该名称',
+          }
+        });
+        next();
+        return;
+      }
+    }
+    yield knex.transaction(function (trx) {
+      return co(function *(){
+        if (name || acronym)  {
+          let data = {};
+          if (name != undefined) {
+            data.name = name;
+          }
+          if (acronym != undefined) {
+            data.acronym = acronym;
+          }
+          if (!R.isEmpty(data)) {
+            yield trx('entities')
+            .update(data)
+            .where('id', tenant.entity_id);
+          }
+        }
+        let data = {};
+        if (contact) {
+          data.contact = contact;
+        }
+        if (departmentId) {
+          data.department_id = departmentId;
+        }
+        if (!R.isEmpty(data)) {
+          yield trx('tenants')
+          .update(data)
+          .where('id', req.params.id);
+        }
+      });
+    });
+  })
+  .then(function () {
+    res.json({});
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+};
+
+router.put('/object/:id', loginRequired, restify.bodyParser(), updateObject);
 
 module.exports = { router };
