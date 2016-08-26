@@ -103,3 +103,11 @@ exports.tenants = {
   contact: t => t.string('contact'),
   department_id: t => t.integer('department_id').references('departments.id')
 };
+
+exports.settings = {
+  id: t => t.increments(),
+  name: t => t.string('name').unique().notNullable(),
+  comment: t => t.string('comment'),
+  value: t => t.string('value'),
+  group: t => t.string('group'),
+};

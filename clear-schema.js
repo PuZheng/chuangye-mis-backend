@@ -2,7 +2,6 @@
 var models = require('./models');
 var knex = require('./knex');
 var logger = require('./logger');
-var R = require('ramda');
 
 var schema = knex.schema;
 for (var tableName of Object.keys(models).reverse()) {

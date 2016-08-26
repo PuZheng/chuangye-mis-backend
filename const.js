@@ -15,3 +15,7 @@ exports.materialTypes = {
   INBOUND: 'inbound',
   OUTBOUND: 'outbound',
 };
+
+exports.settingGroups = {
+  POWER: '电费',
+};
