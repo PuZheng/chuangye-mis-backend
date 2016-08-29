@@ -17,5 +17,8 @@ exports.materialTypes = {
 };
 
 exports.settingGroups = {
-  POWER: '电费',
+  电费: '电费',
+  水费: '水费',
+  蒸汽费: '蒸汽费',
+  氰化钠分摊: '氰化钠分摊',
 };
