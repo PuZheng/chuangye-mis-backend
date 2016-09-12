@@ -1,5 +1,4 @@
 var Router = require('restify-router').Router;
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var knex = require('./knex');

@@ -22,3 +22,9 @@ exports.settingGroups = {
   蒸汽费: '蒸汽费',
   氰化钠分摊: '氰化钠分摊',
 };
+
+exports.ammeterStatus = {
+  NORMAL: '正常',
+  ABNORMAL: '异常',
+  IDLE: '闲置',
+};

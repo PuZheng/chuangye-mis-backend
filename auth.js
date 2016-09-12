@@ -31,7 +31,7 @@ router.post('/login', restify.bodyParser(), function loginCb(req, res, next) {
   });
 });
 
-var could = function could(user, need, args) {
+var could = function could(user, need) {
   return policies[user.role].has(need);
 };
 
