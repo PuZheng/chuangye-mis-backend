@@ -13,5 +13,5 @@ exports[roles.ADMIN] = new Set([
   'view.tenant.list',
   'edit.tenant.object',
   'edit.settings',
-  'edit.ammeter',
+  'edit.electric_meter',
 ]);

@@ -28,7 +28,6 @@ var getObject = function getObject(id) {
 var fullfill = function (obj) {
   return co(function *() {
     obj.voucherType = yield getVoucherType(obj.voucherTypeId);
-    debugger;
     obj.voucherSubject = yield getVoucherSubject(obj.voucherSubjectId);
     obj.payer = yield getEntity(obj.payerId);
     obj.recipient = yield getEntity(obj.recipientId);

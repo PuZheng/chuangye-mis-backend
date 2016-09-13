@@ -20,7 +20,7 @@ server.use(restify.CORS());
 for (let app of [
   'auth', 'invoice-type', 'account-term', 'entity', 'invoice', 
 'material-subject', 'voucher-type', 'voucher-subject', 'voucher',
-'department', 'tenant', 'settings', 'ammeter'
+'department', 'tenant', 'settings', 'electric-meter'
 ]) {
   require('./' + app).router.applyRoutes(server, '/' + app);
 }

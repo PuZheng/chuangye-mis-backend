@@ -23,7 +23,7 @@ exports.settingGroups = {
   氰化钠分摊: '氰化钠分摊',
 };
 
-exports.ammeterStatus = {
+exports.electricMeterStatus = {
   NORMAL: '正常',
   ABNORMAL: '异常',
   IDLE: '闲置',
