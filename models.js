@@ -112,14 +112,14 @@ exports.settings = {
   group: t => t.string('group'),
 };
 
-exports.ammeter = {
+exports.ammeters = {
   id: t => t.increments(),
   name: t => t.string('name').unique().notNullable(),
   // 是否是总表
-  is_total: t => t.boolean('is_public'),
+  is_total: t => t.boolean('is_total'),
   department_id: t => t.integer('department_id').references('departments.id'),
   // 倍数
-  times: t => t.integer('times').notNullable(),
-  parent_ammeter_id: t => t.integer('parent_ammeter_id').references('ammeter.id'),
+  times: t => t.integer('times').notNullable().defaultTo(1),
+  parent_ammeter_id: t => t.integer('parent_ammeter_id').references('ammeters.id'),
   status: t => t.enum('status', R.values(CONST.ammeterStatus)).notNullable().defaultTo(CONST.ammeterStatus.NORMAL),
 };
