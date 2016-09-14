@@ -8,6 +8,7 @@ var casing = require('casing');
 var getDepartment = require('./department').getObject;
 var electricMeterStatus = require('./const').electricMeterStatus;
 var R = require('ramda');
+var electricMeterDef = require('./models').electric_meters;
 
 var router = new Router();
 
@@ -90,5 +91,36 @@ var getStatusList = function getStatusList(req, res, next) {
 };
 
 router.get('/status-list', loginRequired, getStatusList);
+
+var create = function (req, res, next) {
+  knex('electric_meters')
+  .where('name', req.body.name)
+  .select('*')
+  .then(function ([obj]) {
+    if (obj) {
+        res.json(403, {
+          fields: {
+            name: '已经存在该名称',
+          }
+        });
+        return;
+    }
+    obj = R.pick(Object.keys(electricMeterDef), 
+                     casing.snakeize(req.body));
+    knex('electric_meters')
+    .insert(obj)
+    .returning('id')
+    .then(function ([id]) {
+      res.json({ id });
+      next();
+    })
+    .catch(function (e) {
+      logger.error(e);
+      next(e);
+    }); 
+  });
+};
+
+router.post('/object', loginRequired, restify.bodyParser(), create);
 
 module.exports = { router };
