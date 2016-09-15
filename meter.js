@@ -76,10 +76,10 @@ var getList = function getList(req, res, next) {
   return co(function *() {
     let q = knex('meters');
     // filters
-    let kw = req.params.kw;
-    if (kw) {
-      q.where('name', 'like', kw + '%');
-    }
+    let { kw, type } = req.params;
+    kw && q.where('name', 'like', kw + '%');
+    type && q.where('type', type);
+
     let totalCnt = (yield q.clone().count('*'))[0].count;
 
     // offset & limit
