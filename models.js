@@ -112,14 +112,15 @@ exports.settings = {
   group: t => t.string('group'),
 };
 
-exports.electric_meters = {
+exports.meters = {
   id: t => t.increments(),
-  name: t => t.string('name').unique().notNullable(),
+  name: t => t.string('name').notNullable(),
   // 是否是总表
   is_total: t => t.boolean('is_total'),
   department_id: t => t.integer('department_id').references('departments.id'),
   // 倍数
   times: t => t.integer('times').notNullable().defaultTo(1),
-  parent_electric_meter_id: t => t.integer('parent_electric_meter_id').references('electric_meters.id'),
-  status: t => t.enum('status', R.values(CONST.electricMeterStatus)).notNullable().defaultTo(CONST.electricMeterStatus.NORMAL),
+  parent_meter_id: t => t.integer('parent_meter_id').references('meters.id'),
+  status: t => t.enum('status', R.values(CONST.meterStatus)).notNullable().defaultTo(CONST.meterStatus.NORMAL),
+  type: t => t.enum('type', R.values(CONST.meterTypes)).notNullable()
 };

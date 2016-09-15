@@ -6,14 +6,13 @@ var logger = require('./logger');
 var co = require('co');
 var casing = require('casing');
 var getDepartment = require('./department').getObject;
-var electricMeterStatus = require('./const').electricMeterStatus;
 var R = require('ramda');
-var electricMeterDef = require('./models').electric_meters;
+var meterDef = require('./models').meters;
 
 var router = new Router();
 
 var getObject = function getObject(id) {
-  return knex('electric_meters') 
+  return knex('meters') 
   .where('id', id)
   .select('*')
   .then(function ([obj]) {
@@ -52,7 +51,7 @@ router.get(
 
 var getHints = function getHints(req, res, next) {
   let kw = req.params.kw;
-  knex('electric_meters')
+  knex('meters')
   .where('name', 'like', kw + '%')
   .select('name')
   .then(function (list) {
@@ -75,7 +74,7 @@ router.get('/hints/:kw', loginRequired, getHints);
 
 var getList = function getList(req, res, next) {
   return co(function *() {
-    let q = knex('electric_meters');
+    let q = knex('meters');
     // filters
     let kw = req.params.kw;
     if (kw) {
@@ -102,17 +101,8 @@ var getList = function getList(req, res, next) {
 
 router.get('/list', loginRequired, restify.queryParser(), getList);
 
-var getStatusList = function getStatusList(req, res, next) {
-  res.json({
-    data: R.values(electricMeterStatus),
-  });
-  next();
-};
-
-router.get('/status-list', loginRequired, getStatusList);
-
 var create = function (req, res, next) {
-  knex('electric_meters')
+  knex('meters')
   .where('name', req.body.name)
   .select('*')
   .then(function ([obj]) {
@@ -124,9 +114,9 @@ var create = function (req, res, next) {
         });
         return;
     }
-    obj = R.pick(Object.keys(electricMeterDef), 
+    obj = R.pick(Object.keys(meterDef), 
                      casing.snakeize(req.body));
-    knex('electric_meters')
+    knex('meters')
     .insert(obj)
     .returning('id')
     .then(function ([id]) {
@@ -144,7 +134,7 @@ router.post('/object', loginRequired, restify.bodyParser(), create);
 
 var update = function update(req, res, next) {
   return co(function *() {
-    let [{ count }] = yield knex('electric_meters')
+    let [{ count }] = yield knex('meters')
     .where('name', req.body.name)
     .whereNot('id', req.params.id)
     .count();
@@ -157,8 +147,8 @@ var update = function update(req, res, next) {
       next();
       return;
     }
-    let data = R.pick(Object.keys(electricMeterDef), casing.snakeize(req.body));
-    yield knex('electric_meters')
+    let data = R.pick(Object.keys(meterDef), casing.snakeize(req.body));
+    yield knex('meters')
     .update(data)
     .where('id', req.params.id);
     res.json({});

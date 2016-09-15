@@ -9,4 +9,4 @@
 ./make-test-data/invoices.js | bunyan
 ./make-test-data/vouchers.js | bunyan
 ./make-test-data/settings.js | bunyan
-./make-test-data/electric-meters.js | bunyan
+./make-test-data/meters.js | bunyan
