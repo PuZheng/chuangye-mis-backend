@@ -21,15 +21,34 @@ var getObject = function getObject(id) {
   });
 };
 
-var fullfill = function *fullfill(obj) {
-  if (obj.departmentId) {
-    obj.department = yield getDepartment(obj.departmentId);
-  }
-  if (obj.parentElectricMeterId) {
-    obj.parentElectricMeter = yield getObject(obj.parentElectricMeterId);
-  }
-  return obj;
+var fullfill = function fullfill(obj) {
+  return co(function *() {
+    if (obj.departmentId) {
+      obj.department = yield getDepartment(obj.departmentId);
+    }
+    if (obj.parentElectricMeterId) {
+      obj.parentElectricMeter = yield getObject(obj.parentElectricMeterId);
+    }
+    return obj;
+  });
 };
+
+router.get(
+  '/object/:id', 
+  loginRequired, 
+  function (req, res, next) {
+    return getObject(req.params.id)
+    .then(fullfill)
+    .then(function (obj) {
+      res.json(obj);
+      next();
+    })
+    .catch(function (e) {
+      logger.error(e);
+      next(e);
+    });
+  }
+);
 
 var getHints = function getHints(req, res, next) {
   let kw = req.params.kw;
@@ -123,4 +142,29 @@ var create = function (req, res, next) {
 
 router.post('/object', loginRequired, restify.bodyParser(), create);
 
+var update = function update(req, res, next) {
+  return co(function *() {
+    let [{ count }] = yield knex('electric_meters')
+    .where('name', req.body.name)
+    .whereNot('id', req.params.id)
+    .count();
+    if (Number(count) > 0) {
+      res.json(403, {
+        fields: {
+          name: '已经存在该名称',
+        }
+      });
+      next();
+      return;
+    }
+    let data = R.pick(Object.keys(electricMeterDef), casing.snakeize(req.body));
+    yield knex('electric_meters')
+    .update(data)
+    .where('id', req.params.id);
+    res.json({});
+    next();
+  });
+};
+
+router.put('/object/:id', loginRequired, restify.bodyParser(), update);
 module.exports = { router };

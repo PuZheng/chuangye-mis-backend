@@ -34,7 +34,6 @@ router.get('/object/:id', loginRequired, function (req, res, next) {
     return fullfill(casing.camelize(tenant));
   })
   .then(function (tenant) {
-    console.log(tenant);
     res.json(tenant);
     next();
   })
