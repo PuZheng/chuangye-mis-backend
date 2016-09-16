@@ -14,4 +14,5 @@ exports[roles.ADMIN] = new Set([
   'edit.tenant.object',
   'edit.settings',
   'edit.meter',
+  'edit.account_term',
 ]);
