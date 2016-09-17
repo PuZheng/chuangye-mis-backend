@@ -15,4 +15,5 @@ exports[roles.ADMIN] = new Set([
   'edit.settings',
   'edit.meter',
   'edit.account_term',
+  'edit.invoice_type',
 ]);

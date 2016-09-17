@@ -4,7 +4,7 @@ var logger = require('./logger.js');
 var roles = require('./roles');
 var knex = require('./knex');
 var co = require('co');
-var cofy = require('cofy');
+var { materialTypes, entityTypes } = require('./const');
 
 var admin = config.get('admin');
 
@@ -34,19 +34,19 @@ var createInvoiceTypes = function (trx) {
   let rows = [
     { 
       name: '进项增值税', 
-      vendor_type: 'supplier',
-      purchaser_type: 'tenant',
+      vendor_type: entityTypes.SUPPLIER,
+      purchaser_type: entityTypes.TENANT,
       is_vat: true,
-      material_type: 'inbound'
+      material_type: materialTypes.INBOUND
     }, {
       name: '销项增值税', 
-      vendor_type: 'tenant', 
-      purchaser_type: 'supplier', 
+      vendor_type: entityTypes.TENANT, 
+      purchaser_type: entityTypes.CUSTOMER, 
       is_vat: true, 
-      material_type: 'outbound'
+      material_type: materialTypes.OUTBOUND
     }, {
       name: '普通发票', 
-      purchaser_type: 'owner', 
+      purchaser_type: entityTypes.OWNER, 
       is_vat: false,
     }
   ];

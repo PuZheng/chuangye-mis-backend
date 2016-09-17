@@ -2,13 +2,23 @@
 var logger = require('../logger');
 var knex = require('../knex');
 var casing = require('casing');
+var entityTypes = require('../const').entityTypes;
 
 knex.transaction(function (trx) {
   var list = [
-    { name: '项目1', acronym: 'xm1', payerType: 'customer', recipientType: 'tenant', notes: '项目1的说明', isPublic: true },
-    { name: '项目2', acronym: 'xm2', payerType: 'tenant', recipientType: 'owner', notes: '项目2的说明', isPublic: true },
-    { name: '项目3', acronym: 'xm3', payerType: 'tenant', recipientType: 'supplier', notes: '项目3的说明', isPublic: false },
-  ];
+    ['项目1', 'xm1', entityTypes.CUSTOMER, entityTypes.OWNER, '项目1的说明', true],
+    ['项目2', 'xm2', entityTypes.TENANT, entityTypes.OWNER, '项目2的说明', true],
+    ['项目3', 'xm3', entityTypes.TENANT, entityTypes.SUPPLIER, '项目3的说明', false],
+  ].map(function ([name, acronym, payerType, recipientType, notes, isPublic]) {
+    return {
+      name,
+      acronym,
+      payerType,
+      recipientType,
+      notes,
+      isPublic
+    };
+  });
   return trx.batchInsert('voucher_subjects', casing.snakeize(list));
 }).then(function () {
   logger.info('completed');

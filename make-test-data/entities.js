@@ -1,31 +1,19 @@
 #! /usr/bin/env node
-var config = require('../config.js');
-var pgp = require('pg-promise')();
-var db = pgp(config.get('dbConnection'));
-var logger = require('../logger.js');
+var logger = require('../logger');
+var knex = require('../knex');
+var entityTypes = require('../const').entityTypes;
 
 var makeEntities = function () {
 
   var entities = [
-    { name: '业主', acronym: 'yz', type: 'owner' },
-    { name: '客户1', acronym: 'kh1', type: 'customer' },
-    { name: '客户2', acronym: 'kh2', type: 'customer' },
-    { name: '客户3', acronym: 'kh3', type: 'customer' },
-    { name: '供应商1', acronym: 'gys1', type: 'supplier' },
-    { name: '供应商2', acronym: 'gys2', type: 'supplier' },
+    { name: '业主', acronym: 'yz', type: entityTypes.OWNER },
+    { name: '客户1', acronym: 'kh1', type: entityTypes.CUSTOMER },
+    { name: '客户2', acronym: 'kh2', type: entityTypes.CUSTOMER },
+    { name: '客户3', acronym: 'kh3', type: entityTypes.CUSTOMER },
+    { name: '供应商1', acronym: 'gys1', type: entityTypes.SUPPLIER },
+    { name: '供应商2', acronym: 'gys2', type: entityTypes.SUPPLIER },
   ];
-
-  return db.tx(function (t) {
-    return t.batch(entities.map(function (it) {
-      return db.none(
-        `
-        INSERT INTO entities (name, type, acronym) values
-        ($<name>, $<type>, $<acronym>)
-        `,
-        it
-      );
-    }));
-  });
+  return knex.batchInsert('entities', entities);
 };
 
 module.exports = makeEntities;
@@ -33,9 +21,9 @@ module.exports = makeEntities;
 if (require.main === module) {
   makeEntities().then(function () {
     logger.info('completed');
-    pgp.end();
+    knex.destroy();
   }, function (e) {
     logger.error(e);
-    pgp.end();
+    knex.destroy();
   });
 }

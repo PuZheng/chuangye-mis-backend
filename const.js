@@ -5,15 +5,15 @@ exports.roles = {
 };
 
 exports.entityTypes = {
-  SUPPLIER: 'supplier',
-  CUSTOMER: 'customer',
-  TENANT: 'tenant',
-  OWNER: 'owner',
+  SUPPLIER: '供应商',
+  CUSTOMER: '客户',
+  TENANT: '承包人',
+  OWNER: '业主',
 };
 
 exports.materialTypes = {
-  INBOUND: 'inbound',
-  OUTBOUND: 'outbound',
+  INBOUND: '入库',
+  OUTBOUND: '出库',
 };
 
 exports.settingGroups = {
