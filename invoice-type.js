@@ -93,6 +93,17 @@ var create = function (req, res, next) {
 
 router.post('/object', loginRequired, restify.bodyParser(), create);
 
+var get = function (req, res, next) {
+  knex('invoice_types')
+  .where('id', req.params.id)
+  .then(function ([obj]) {
+    res.json(casing.camelize(obj));
+    next();
+  });
+};
+
+router.get('/object/:id', loginRequired, get);
+
 module.exports = {
   router,
   getObject
