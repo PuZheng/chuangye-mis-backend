@@ -5,6 +5,8 @@ var casing = require('casing');
 var loginRequired = require('./login-required');
 var knex = require('./knex');
 var logger = require('./logger');
+var objDef = require('./models').invoice_types;
+var R = require('ramda');
 
 var getObject = function (id) {
   return knex('invoice_types')
@@ -56,6 +58,40 @@ var getHints = function(req, res, next) {
 };
 
 router.get('/hints/:kw', loginRequired, getHints);
+
+var create = function (req, res, next) {
+  let data = R.pick(Object.keys(objDef), casing.snakeize(req.body));
+  knex('invoice_types')
+  .where('name', data.name)
+  .count()
+  .then(function ([{ count }]) {
+    if (Number(count) > 0) {
+      res.json(403, {
+        fields: {
+          name: '已经存在该名称',
+        }
+      });
+      next();
+      return;
+    }
+    knex('invoice_types')
+    .insert(data)
+    .returning('id')
+    .then(function ([id]) {
+      res.json({
+        id
+      });
+      next();
+    })
+    .catch(function (e) {
+      logger.error(e);
+      next(e);
+    });
+  });
+
+};
+
+router.post('/object', loginRequired, restify.bodyParser(), create);
 
 module.exports = {
   router,
