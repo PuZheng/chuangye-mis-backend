@@ -108,4 +108,32 @@ var get = function (req, res, next) {
 
 router.get('/object/:id', loginRequired, get);
 
+var update = function (req, res, next) {
+  return co(function *() {
+    let { id } = req.params;
+    let data = R.pick(Object.keys(objDef), casing.snakeize(req.body));
+    let [{ count }] = yield knex('voucher_subjects')
+    .where('name', data.name)
+    .whereNot('id', id)
+    .count();
+    if (Number(count) > 0) {
+      res.json(403, {
+        fields: {
+          name: '已经存在该名称',
+        }
+      });
+      next();
+      return;
+    }
+    yield knex('voucher_subjects')
+    .where('id', id)
+    .update(data);
+    res.json({});
+    next();
+  });
+};
+
+router.put('/object/:id', loginRequired, restify.bodyParser(), update);
+
+
 module.exports = { router, getObject };
