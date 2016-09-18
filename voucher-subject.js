@@ -3,6 +3,7 @@ var logger = require('./logger');
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var knex = require('./knex');
+var R = require('ramda');
 
 var router = new  Router();
 
@@ -25,5 +26,23 @@ router.get('/list', loginRequired, function (req, res, next) {
     next(e);
   });
 });
+
+var getHints = function (req, res, next) {
+  knex('voucher_subjects')
+  .where('name', 'like', req.params.kw + '%')
+  .select('name')
+  .then(function (list) {
+    res.json({
+      data: list.map(R.prop('name'))
+    });
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+};
+
+router.get('/hints/:kw', loginRequired, getHints);
 
 module.exports = { router, getObject };
