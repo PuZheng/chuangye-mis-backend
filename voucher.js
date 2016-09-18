@@ -118,7 +118,8 @@ var fetchList = function (req, res, next) {
 router.get('/list', loginRequired, restify.queryParser(), fetchList);
 
 router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
-  knex('vouchers').whereRaw('UPPER(number) like ?', req.params.kw.toUpperCase() + '%')
+  knex('vouchers')
+  .whereRaw('UPPER(number) like ?', req.params.kw.toUpperCase() + '%')
   .then(function (list) {
     res.json({ data: list.map(it => it.number) });
     next();
