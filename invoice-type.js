@@ -104,6 +104,34 @@ var get = function (req, res, next) {
 
 router.get('/object/:id', loginRequired, get);
 
+var update = function (req, res, next) {
+  let data = R.pick(Object.keys(objDef), casing.snakeize(req.body));
+  knex('invoice_types')
+  .where('name', data.name)
+  .whereNot('id', req.params.id)
+  .count()
+  .then(function ([{ count }]) {
+    if (Number(count) > 0) {
+      res.json(403, {
+        fields: {
+          name: '已经存在该名称',
+        }
+      });
+      next();
+      return;
+    }
+    knex('invoice_types')
+    .where('id', req.params.id)
+    .update(data)
+    .then(function () {
+      res.json({});
+      next();
+    });
+  });
+};
+
+router.put('/object/:id', loginRequired, restify.bodyParser(), update);
+
 module.exports = {
   router,
   getObject
