@@ -118,7 +118,7 @@ var newObject = function (req, res, next) {
                     .where('name', name)
                    .select('*'))[0];
       if (entity) {
-        res.json(403, {
+        res.json(400, {
           fields: {
             name: '已经存在该名称',
           }
@@ -158,7 +158,7 @@ var updateObject = function (req, res, next) {
     .where('id', req.params.id)
     .select('*');
     if (!tenant) {
-      res.json(403, {
+      res.json(400, {
         message: '不存在该承包人',
       });
       next();
@@ -178,7 +178,7 @@ var updateObject = function (req, res, next) {
       .where('name', name)
       .select('*');
       if (entity) {
-        res.json(403, {
+        res.json(400, {
           fields: {
             name: '已经存在该名称',
           }

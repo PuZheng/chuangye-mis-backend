@@ -17,4 +17,5 @@ exports[roles.ADMIN] = new Set([
   'edit.account_term',
   'edit.invoice_type',
   'edit.voucher_subject',
+  'edit.user',
 ]);

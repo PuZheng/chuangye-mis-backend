@@ -17,11 +17,12 @@ server.opts(/\.*/, function (req, res, next) {
   next();
 });
 server.use(restify.CORS());
-for (let app of [
+let apps = [
   'const', 'auth', 'invoice-type', 'account-term', 'entity', 'invoice', 
-'material-subject', 'voucher-type', 'voucher-subject', 'voucher',
-'department', 'tenant', 'settings', 'meter'
-]) {
+  'material-subject', 'voucher-type', 'voucher-subject', 'voucher',
+  'department', 'tenant', 'settings', 'meter', 'user'
+];
+for (let app of apps) {
   require('./' + app).router.applyRoutes(server, '/' + app);
 }
 // server.on('after', restify.auditLogger({

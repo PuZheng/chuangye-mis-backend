@@ -35,14 +35,16 @@ var could = function could(user, need) {
   return policies[user.role].has(need);
 };
 
-router.post('/could', loginRequired, restify.bodyParser(), function couldCb(req, res, next) {
+var couldCb = function couldCb(req, res, next) {
   let tests = req.body.tests;
   res.json({
     data: tests.map(t => R.isArrayLike(t)? t: [t]).map(t => could(req.user, ...t))
   });
   next();
-});
+};
+
+router.post('/could', loginRequired, restify.bodyParser(), couldCb);
 
 module.exports = {
-  router,
+  router, could
 };
