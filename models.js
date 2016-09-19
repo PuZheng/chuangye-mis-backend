@@ -7,7 +7,8 @@ exports.users = {
   username: t => t.string('username').unique(),
   password: t => t.string('password'),
   role: t => t.enum('role', R.values(CONST.roles)).notNullable(),
-  created: t => t.timestamp('created').defaultTo(knex.fn.now())
+  created: t => t.timestamp('created').defaultTo(knex.fn.now()),
+  enabled: t => t.boolean('enabled').defaultTo(true),
 };
 
 exports.invoice_types = {

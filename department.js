@@ -16,7 +16,7 @@ router.post(
     co(function *() {
       let department = (yield knex('departments').where('name', req.body.name).select('*'))[0];
       if (department) {
-        res.json(403, {
+        res.json(400, {
           name: '已经存在该车间',
         });
       }

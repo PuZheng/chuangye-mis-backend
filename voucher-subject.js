@@ -73,7 +73,7 @@ var create = function (req, res, next) {
     .where('name', data.name)
     .count();
     if (Number(count) > 0) {
-      res.json(403, {
+      res.json(400, {
         fields: {
           name: '已经存在该名称',
         }
@@ -117,7 +117,7 @@ var update = function (req, res, next) {
     .whereNot('id', id)
     .count();
     if (Number(count) > 0) {
-      res.json(403, {
+      res.json(400, {
         fields: {
           name: '已经存在该名称',
         }
