@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 var config = require('./config.js');
 var logger = require('./logger.js');
-var roles = require('./roles');
+var roles = require('./const').roles;
 var knex = require('./knex');
 var co = require('co');
 var { materialTypes, entityTypes } = require('./const');

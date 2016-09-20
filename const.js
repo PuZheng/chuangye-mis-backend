@@ -1,7 +1,7 @@
 exports.roles = {
-  ADMIN: 'admin',
-  ACCOUNTANT: 'accountant',
-  CASHIER: 'cashier'
+  ADMIN: '管理员',
+  ACCOUNTANT: '会计',
+  CASHIER: '出纳'
 };
 
 exports.entityTypes = {

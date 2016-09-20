@@ -2,7 +2,7 @@
 var config = require('../config.js');
 var pgp = require('pg-promise')();
 var db = pgp(config.get('dbConnection'));
-var roles = require('../roles');
+var roles = require('../const').roles;
 var logger = require('../logger.js');
 
 var makeAccounts = function () {
