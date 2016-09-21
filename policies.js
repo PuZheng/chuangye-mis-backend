@@ -1,4 +1,4 @@
-var roles = require('./roles');
+var roles = require('./const').roles;
 exports[roles.ACCOUNTANT] = new Set([
   'view.invoice.list',
   'edit.invoice.object',
