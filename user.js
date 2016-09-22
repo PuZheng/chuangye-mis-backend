@@ -51,15 +51,15 @@ var updateCb = function (req, res, next) {
   let { id } = req.params;
   let data = R.pick(Object.keys(objDef), casing.snakeize(req.body));
   return co(function *() {
-    if (data.name) {
+    if (data.username) {
       let [{ count }] = yield knex('users')
-      .where('name', 'data.name')
+      .where('username', data.username)
       .whereNot('id', id)
       .count();
       if (Number(count) > 0) {
         res.json(400, {
           fields: {
-            name: '该名称已经存在',
+            username: '该名称已经存在',
           }
         });
         next();
@@ -101,7 +101,7 @@ var create = function (req, res, next) {
     if (Number(count) > 0) {
         res.json(400, {
           fields: {
-            name: '已经存在该名称',
+            username: '已经存在该名称',
           }
         });
         return;
