@@ -49,10 +49,25 @@ router.get('/list', loginRequired, permissionRequired('edit.user'), listCb);
 var updateCb = function (req, res, next) {
   let { id } = req.params;
   let data = R.pick(Object.keys(objDef), casing.snakeize(req.body));
-  knex('users')
-  .where('id', id)
-  .update(data)
-  .then(function () {
+  return co(function *() {
+    if (data.name) {
+      let [{ count }] = yield knex('users')
+      .where('name', 'data.name')
+      .whereNot('id', id)
+      .count();
+      if (Number(count) > 0) {
+        res.json(403, {
+          fields: {
+            name: '该名称已经存在',
+          }
+        });
+        next();
+        return;
+      }
+    }
+    yield knex('users')
+    .where('id', id)
+    .update(data);
     res.json({});
     next();
   })
