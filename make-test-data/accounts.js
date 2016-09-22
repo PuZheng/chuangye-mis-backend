@@ -1,9 +1,8 @@
 #! /usr/bin/env node
-var config = require('../config.js');
-var pgp = require('pg-promise')();
-var db = pgp(config.get('dbConnection'));
+var knex = require('../knex');
 var roles = require('../const').roles;
 var logger = require('../logger.js');
+var R = require('ramda');
 
 var makeAccounts = function () {
 
@@ -13,26 +12,23 @@ var makeAccounts = function () {
     ['cn1', 'cn1', roles.CASHIER],
     ['cn2', 'cn2', roles.CASHIER],
   ];
-  return db.tx(function (t) {
-    return t.batch(accounts.map(function (a) {
-      return t.none(
-        `
-        INSERT INTO users (username, password, role) VALUES 
-        ($1, crypt($2, gen_salt('md5')), $3)
-        `,
-        a
-      );
-    }));
-  });
+  return knex('users')
+  .insert(R.map(function (a) {
+    return {
+      username: a[0],
+      password: knex.raw('crypt(?, gen_salt(\'md5\'))', [a[1]]),
+      role: a[2]
+    };
+  })(accounts));
 };
 
 if (require.main === module) {
   makeAccounts().then(function () {
     logger.info('completed');
-    pgp.end();
+    knex.destroy();
   }, function (e) {
     logger.error(e);
-    pgp.end();
+    knex.destroy();
   });
 };
 

@@ -1,6 +1,6 @@
 #! /usr/bin/env node
-var config = require('./config.js');
-var logger = require('./logger.js');
+var config = require('./config');
+var logger = require('./logger');
 var roles = require('./const').roles;
 var knex = require('./knex');
 var co = require('co');

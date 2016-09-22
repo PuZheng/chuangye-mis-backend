@@ -8,6 +8,8 @@ var casing = require('casing');
 var R = require('ramda');
 var objDef = require('./models').users;
 var co = require('co');
+var config = require('./config.js');
+var admin = config.get('admin');
 
 var router = new  Router();
 
@@ -20,10 +22,9 @@ var getObject = function (id) {
 };
 
 router.get('/object/:id', loginRequired, permissionRequired('edit.user'), function(req, res, next) {
-  return knex('users').where('id', req.params.id)
-  .select('*')
-  .then(function ([obj]) {
-    res.json(casing.camelize(obj));
+  return getObject(req.params.id)
+  .then(function (obj) {
+    res.json(obj);
     next();
   });
 });
@@ -34,7 +35,7 @@ var listCb = function (req, res, next) {
   .orderBy('username')
   .then(function (list) {
     res.json({
-      data: list.map(casing.camelize),
+      data: list.map(R.compose(casing.camelize, R.omit('password'))),
     });
     next();
   })
@@ -56,7 +57,7 @@ var updateCb = function (req, res, next) {
       .whereNot('id', id)
       .count();
       if (Number(count) > 0) {
-        res.json(403, {
+        res.json(400, {
           fields: {
             name: '该名称已经存在',
           }
@@ -64,6 +65,18 @@ var updateCb = function (req, res, next) {
         next();
         return;
       }
+    }
+    if (!data.enabled && data.username == admin.username) {
+      res.json(400, {
+        fields: {
+          enabled: '不能锁定超级管理员',
+        }
+      });
+      next();
+      return;
+    }
+    if (data.password) {
+      data.password = knex.raw('crypt(?, gen_salt(\'md5\'))', [data.password]);
     }
     yield knex('users')
     .where('id', id)
@@ -92,6 +105,9 @@ var create = function (req, res, next) {
           }
         });
         return;
+    }
+    if (data.password) {
+      data.password = knex.raw('crypt(?, gen_salt(\'md5\'))', [data.password]);
     }
     knex('users')
     .insert(data)
