@@ -7,7 +7,7 @@ var knex = require('./knex');
 var restify = require('restify');
 
 var getObject = function (id) {
-  return knex('material_subjects').select('*')
+  return knex('store_subjects').select('*')
   .where('id', id)
   .then(function ([o]) {
     return casing.camelize(o);
@@ -15,11 +15,9 @@ var getObject = function (id) {
 };
 
 router.get('/list', loginRequired, restify.queryParser(), function (req, res, next) {
-  let q = knex('material_subjects').select('*');
-  if (req.params.type) {
-    q = q.where('type', req.params.type);
-  }
-  q.then(function (list) {
+  let q = knex('store_subjects').select('*');
+  q
+  .then(function (list) {
     res.json({ data: casing.camelize(list) });
     next();
   }).catch(function (e) {

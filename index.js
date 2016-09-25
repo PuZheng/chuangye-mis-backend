@@ -19,7 +19,7 @@ server.opts(/\.*/, function (req, res, next) {
 server.use(restify.CORS());
 let apps = [
   'const', 'auth', 'invoice-type', 'account-term', 'entity', 'invoice', 
-  'material-subject', 'voucher-type', 'voucher-subject', 'voucher',
+  'store-subject', 'voucher-type', 'voucher-subject', 'voucher',
   'department', 'tenant', 'settings', 'meter', 'user'
 ];
 for (let app of apps) {

@@ -12,7 +12,7 @@ var moment = require('moment');
 var getAccountTerm = require('./account-term').getObject;
 var getInvoiceType = require('./invoice-type').getObject;
 var getEntity = require('./entity').getObject;
-var getMaterialSubject = require('./material-subject').getObject;
+var getStoreSubject = require('./store-subject').getObject;
 var getUser = require('./user').getObject;
 var R = require('ramda');
 
@@ -52,7 +52,7 @@ var fullfill = function (obj) {
     obj.purchaser = yield getEntity(obj.purchaserId);
     obj.materialNotes = yield knex('material_notes').where('invoice_id', obj.id);
     for (var mn of obj.materialNotes) {
-      mn.materialSubject = yield getMaterialSubject(mn.materialSubjectId);
+      mn.storeSubjects = yield getStoreSubject(mn.storeSubjectId);
     }
     obj.creator = yield getUser(obj.creatorId);
     return obj;
