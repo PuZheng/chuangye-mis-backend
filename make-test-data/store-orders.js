@@ -17,7 +17,7 @@ var makeStoreOrders = function () {
         C.integer({ min: 1, max: 1000 }),
         C.pickone(R.values(storeOrderDirections)),
         C.pickone(R.values(storeOrderTypes)),
-        C.date({ year: 2016, month: C.pickone([6, 7, 8, 9, 10]) }),
+        C.date({ year: 2016, month: C.pickone([5, 6, 7, 8]) }),
       ];
     });
     return knex.batchInsert('store_orders', rows.map(function ([
