@@ -58,17 +58,6 @@ exports.store_subjects = {
 };
 
 
-exports.store_orders = {
-  id: t => t.increments(),
-  store_subject_id: t => t.integer('store_subject_id').references('store_subjects.id'),
-  quantity: t => t.float('quantity'),
-  unit_price: t => t.float('unit_price', 2),
-  invoice_id: t => t.integer('invoice_id').references('invoices.id'),
-  direction: t => t.enum('direction', R.values(CONST.storeOrderDirections)).notNullable(),
-  type: t => t.enum('type', R.values(CONST.storeOrderTypes)).notNullable(),
-  created: t => t.timestamp('created').defaultTo(knex.fn.now())
-};
-
 exports.voucher_types = {
   id: t => t.increments(),
   name: t => t.string('name').unique().notNullable(),
@@ -109,6 +98,19 @@ exports.tenants = {
   contact: t => t.string('contact'),
   department_id: t => t.integer('department_id').references('departments.id')
 };
+
+exports.store_orders = {
+  id: t => t.increments(),
+  store_subject_id: t => t.integer('store_subject_id').references('store_subjects.id'),
+  quantity: t => t.float('quantity'),
+  unit_price: t => t.float('unit_price', 2),
+  invoice_id: t => t.integer('invoice_id').references('invoices.id'),
+  direction: t => t.enum('direction', R.values(CONST.storeOrderDirections)).notNullable(),
+  type: t => t.enum('type', R.values(CONST.storeOrderTypes)).notNullable(),
+  created: t => t.timestamp('created').defaultTo(knex.fn.now()),
+  tenant_id: t => t.integer('tenant_id').references('tenants.id'),
+};
+
 
 exports.settings = {
   id: t => t.increments(),
