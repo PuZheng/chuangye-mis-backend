@@ -5,11 +5,12 @@ var Chance = require('chance');
 var C = new Chance();
 var R = require('ramda');
 var { storeOrderTypes, storeOrderDirections } = require('../const');
+var co = require('co');
 
 var makeStoreOrders = function () {
-  return knex('store_subjects')
-  .select('*')
-  .then(function (storeSubjects) {
+  return co(function *() {
+    let storeSubjects = yield knex('store_subjects').select('*');
+    let tenants = yield knex('tenants').select('*');
     let rows = R.range(0, 500).map(function () {
       return [
         C.pickone(storeSubjects).id,
@@ -18,15 +19,17 @@ var makeStoreOrders = function () {
         C.pickone(R.values(storeOrderDirections)),
         C.pickone(R.values(storeOrderTypes)),
         C.date({ year: 2016, month: C.pickone([5, 6, 7, 8]) }),
+        C.pickone(tenants).id,
       ];
     });
-    return knex.batchInsert('store_orders', rows.map(function ([
+    yield knex.batchInsert('store_orders', rows.map(function ([
       store_subject_id, 
       quantity,
       unit_price,
       direction,
       type,
       created,
+      tenant_id,
     ]) {
       return {
         store_subject_id, 
@@ -35,6 +38,7 @@ var makeStoreOrders = function () {
         direction,
         type,
         created,
+        tenant_id,
       };
     }));
   });
