@@ -8,7 +8,7 @@ var casing = require('casing');
 var R = require('ramda');
 var objDef = require('./models').users;
 var co = require('co');
-var config = require('./config.js');
+var config = require('./config');
 var admin = config.get('admin');
 
 var router = new  Router();
