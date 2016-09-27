@@ -14,10 +14,13 @@ exports.users = {
 exports.invoice_types = {
   id: t => t.increments('id'),
   name: t => t.string('name').unique().notNullable(),
-  vendor_type: t => t.enum('vendor_type', R.values(CONST.entityTypes).concat('')),
-  purchaser_type: t => t.enum('purchaser_type', R.values(CONST.entityTypes).concat('')),
+  vendor_type: t => t.enum('vendor_type', R.values(CONST.entityTypes)),
+  purchaser_type: t => t.enum('purchaser_type', R.values(CONST.entityTypes)),
   is_vat: t => t.boolean('is_vat'),
-  material_type: t => t.enum('material_type', R.values(CONST.materialTypes).concat('')),
+  store_order_type: t => t.enum('store_order_type', 
+                                R.values(CONST.storeOrderTypes)),
+  store_order_direction: t => t.enum('store_order_direction',
+                                    R.values(CONST.storeOrderDirections)),
 };
 
 exports.account_terms = {
@@ -47,22 +50,13 @@ exports.invoices = {
   creator_id: t => t.integer('creator_id').references('users.id'),
 };
 
-exports.material_subjects = {
+exports.store_subjects = {
   id: t => t.increments(),
   name: t => t.string('name').unique().notNullable(),
   unit: t => t.string('unit', 8).notNullable(),
-  type: t => t.enum('type', R.values(CONST.materialTypes)).notNullable,
+  acronym: t => t.string('acronym'),
 };
 
-
-exports.material_notes = {
-  id: t => t.increments(),
-  material_subject_id: t => t.integer('material_subject_id').references('material_subjects.id'),
-  quantity: t => t.float('quantity'),
-  unit_price: t => t.float('unit_price', 2),
-  tax_rate: t => t.float('tax_rate'),
-  invoice_id: t => t.integer('invoice_id').references('invoices.id'),
-};
 
 exports.voucher_types = {
   id: t => t.increments(),
@@ -104,6 +98,19 @@ exports.tenants = {
   contact: t => t.string('contact'),
   department_id: t => t.integer('department_id').references('departments.id')
 };
+
+exports.store_orders = {
+  id: t => t.increments(),
+  store_subject_id: t => t.integer('store_subject_id').references('store_subjects.id'),
+  quantity: t => t.float('quantity'),
+  unit_price: t => t.float('unit_price', 2),
+  invoice_id: t => t.integer('invoice_id').references('invoices.id'),
+  direction: t => t.enum('direction', R.values(CONST.storeOrderDirections)).notNullable(),
+  type: t => t.enum('type', R.values(CONST.storeOrderTypes)).notNullable(),
+  created: t => t.timestamp('created').defaultTo(knex.fn.now()),
+  tenant_id: t => t.integer('tenant_id').references('tenants.id'),
+};
+
 
 exports.settings = {
   id: t => t.increments(),

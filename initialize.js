@@ -4,7 +4,7 @@ var logger = require('./logger');
 var roles = require('./const').roles;
 var knex = require('./knex');
 var co = require('co');
-var { materialTypes, entityTypes } = require('./const');
+var { entityTypes, storeOrderTypes, storeOrderDirections } = require('./const');
 
 var admin = config.get('admin');
 
@@ -37,13 +37,15 @@ var createInvoiceTypes = function (trx) {
       vendor_type: entityTypes.SUPPLIER,
       purchaser_type: entityTypes.TENANT,
       is_vat: true,
-      material_type: materialTypes.INBOUND
+      store_order_type: storeOrderTypes.MATERIAL,
+      store_order_direction: storeOrderDirections.INBOUND,
     }, {
       name: '销项增值税', 
       vendor_type: entityTypes.TENANT, 
       purchaser_type: entityTypes.CUSTOMER, 
       is_vat: true, 
-      material_type: materialTypes.OUTBOUND
+      store_order_type: storeOrderTypes.PRODUCT,
+      store_order_direction: storeOrderDirections.OUTBOUND,
     }, {
       name: '普通发票', 
       purchaser_type: entityTypes.OWNER, 

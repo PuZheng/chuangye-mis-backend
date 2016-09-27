@@ -154,8 +154,9 @@ router.post('/object', loginRequired, restify.bodyParser(), newObject);
 
 var updateObject = function (req, res, next) {
   co(function *() {
+    let { id } = req.params;
     let [tenant] = yield knex('tenants') 
-    .where('id', req.params.id)
+    .where('id', id)
     .select('*');
     if (!tenant) {
       res.json(400, {
@@ -174,10 +175,12 @@ var updateObject = function (req, res, next) {
       departmentId
     } = req.body;
     if (name) {
-      let [entity] = yield knex('entities')
-      .where('name', name)
-      .select('*');
-      if (entity) {
+      let [{ count }] = yield knex('tenants')
+      .join('entities', 'tenants.entity_id', '=', 'entities.id')
+      .where('entities.name', name)
+      .whereNot('tenants.id', id)
+      .count();
+      if (Number(count) > 0) {
         res.json(400, {
           fields: {
             name: '已经存在该名称',

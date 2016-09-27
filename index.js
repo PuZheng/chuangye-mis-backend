@@ -19,8 +19,8 @@ server.opts(/\.*/, function (req, res, next) {
 server.use(restify.CORS());
 let apps = [
   'const', 'auth', 'invoice-type', 'account-term', 'entity', 'invoice', 
-  'material-subject', 'voucher-type', 'voucher-subject', 'voucher',
-  'department', 'tenant', 'settings', 'meter', 'user'
+  'store-subject', 'voucher-type', 'voucher-subject', 'voucher',
+  'department', 'tenant', 'settings', 'meter', 'user', 'store-order',
 ];
 for (let app of apps) {
   require('./' + app).router.applyRoutes(server, '/' + app);

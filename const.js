@@ -11,9 +11,14 @@ exports.entityTypes = {
   OWNER: '业主',
 };
 
-exports.materialTypes = {
+exports.storeOrderDirections = {
   INBOUND: '入库',
   OUTBOUND: '出库',
+};
+
+exports.storeOrderTypes = {
+  MATERIAL: '原材料',
+  PRODUCT: '产品',
 };
 
 exports.settingGroups = {
