@@ -1,3 +1,5 @@
+const TABLE_NAME = 'store_orders';
+
 var restify = require('restify');
 var Router = require('restify-router').Router;
 var logger = require('./logger');
@@ -6,36 +8,36 @@ var knex = require('./knex');
 var moment = require('moment');
 var casing = require('casing');
 var co = require('co');
-var getStoreSubject = require('./store-subject').getObject;
+var storeOrderDef = require('./models')[TABLE_NAME];
+var storeSubjectDef = require('./models').store_subjects;
+var layerify = require('./utils/layerify');
 
 var router = new  Router();
 
-var fullfill = function (obj) {
-  return co(function *() {
-    obj.storeSubject = yield getStoreSubject(obj.storeSubjectId); 
-    if (obj.invoiceId) {
-      [obj.invoice] = yield knex('invoices').select('number').where('id', obj.invoiceId);
-    }
-    return obj;
-  });
-};
-
 var list = function (req, res, next) {
   return co(function *() {
-    let q = knex('store_orders');
+    let q = knex(TABLE_NAME);
 
     // filters
-    let { date_span, type, direction, subject_id } = req.params;
-    if (date_span) {
-      let m = date_span.match(/in_(\d+)_days/);
-      if (m) {
-        let target = moment().subtract(m[1], 'days').toDate();
-        q.where('created', '>=', target);
+    for (let col of ['date_span', 'type', 'direction', 'subject_id', 'tenant_id']) {
+      let v = req.params[col];
+      switch (col) {
+        case 'date_span': {
+          let m = v.match(/in_(\d+)_days/);
+          if (m) {
+            let target = moment().subtract(m[1], 'days').toDate();
+            q.where(TABLE_NAME + '.created', '>=', target);
+          }
+          break;
+        }
+        case 'subject_id': {
+          v && q.where(TABLE_NAME + '.store_subject_id', v);
+          break;
+        }
+        default: 
+          v && q.where(TABLE_NAME + '.' + col, v);
       }
     }
-    type && q.where('type', type);
-    direction && q.where('direction', direction);
-    subject_id && q.where('store_subject_id', subject_id);
 
     let totalCnt = (yield q.clone().count('*'))[0].count;
 
@@ -61,12 +63,36 @@ var list = function (req, res, next) {
       q.offset((req.params.page - 1) * page_size).limit(page_size);
     }
 
-    let data = yield q.select('*');
-    for (let i = 0; i < data.length; ++i) {
-      data[i] = yield fullfill(casing.camelize(data[i]));
-    }
+    let data = yield q
+    .join('store_subjects', 'store_subjects.id', 'store_orders.store_subject_id')
+    .leftOuterJoin('invoices', 'invoices.id', 'store_orders.invoice_id')
+    .leftOuterJoin('tenants', 'tenants.id', 'store_orders.tenant_id')
+    .join('entities', 'entities.id', 'tenants.entity_id')
+    .select([
+      ...Object.keys(storeOrderDef)
+      .map(function (col) {
+        return TABLE_NAME + '.' + col;
+      }),
+      ...Object.keys(storeSubjectDef)
+      .map(function (col) {
+        return 'store_subjects.' + col + ' as store_subject__' + col;
+      }),
+      'invoices.id as invoice__id',
+      'invoices.number as invoice__number',
+      'tenants.id as tenant__id',
+      'entities.name as tenant__entity__name',
+    ])
+    .then(function (data) {
+      return data.map(function (record) {
+        let ret = layerify(record);
+        if (!ret.invoice.id) {
+          delete ret.invoice;
+        }
+        return ret;
+      });
+    });
     res.json({
-      data,
+      data: data.map(casing.camelize),
       totalCnt
     });
     next();

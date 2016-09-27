@@ -12,6 +12,16 @@ var R = require('ramda');
 
 var router = new Router();
 
+var getObject = function (id) {
+  return knex('tenants')
+  .where('id', id)
+  .select('*')
+  .then(casing.camelize)
+  .then(function ([obj]) {
+    return fullfill(obj);
+  });
+};
+
 var fullfill = function (obj) {
   return getEntity(obj.entityId)
   .then(function (entity) {
@@ -233,4 +243,4 @@ var updateObject = function (req, res, next) {
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), updateObject);
 
-module.exports = { router };
+module.exports = { router, getObject };

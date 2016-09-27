@@ -5,7 +5,7 @@ var logger = require('./logger');
 
 var schema = knex.schema;
 for (var tableName of Object.keys(models).reverse()) {
-  schema.dropTableIfExists(tableName);
+  schema.raw(`drop table if exists ${tableName} cascade`);
 }
 
 schema
