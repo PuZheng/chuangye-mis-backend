@@ -12,35 +12,28 @@ var makeStoreOrders = function () {
     let storeSubjects = yield knex('store_subjects').select('*');
     let tenants = yield knex('tenants').select('*');
     let rows = R.range(0, 500).map(function () {
-      return [
-        C.pickone(storeSubjects).id,
-        C.integer({ min: 1, max: 1000 }),
-        C.integer({ min: 1, max: 1000 }),
-        C.pickone(R.values(storeOrderDirections)),
-        C.pickone(R.values(storeOrderTypes)),
-        C.date({ year: 2016, month: C.pickone([5, 6, 7, 8]) }),
-        C.pickone(tenants).id,
-      ];
-    });
-    yield knex.batchInsert('store_orders', rows.map(function ([
-      store_subject_id, 
-      quantity,
-      unit_price,
-      direction,
-      type,
-      created,
-      tenant_id,
-    ]) {
+      let direction = C.pickone(R.values(storeOrderDirections));
+      let type = C.pickone(R.values(storeOrderTypes));
+      let tax_rate;
+      let quantity = C.integer({ min: 1, max: 1000 });
+      let unit_price;
+      if ((direction == storeOrderDirections.INBOUND && type == storeOrderTypes.MATERIAL) ||
+         (direction === storeOrderDirections.OUTBOUND && type == storeOrderTypes.PRODUCT)) {
+        tax_rate = 17;
+        unit_price = C.integer({ min: 1, max: 1000 });
+      }
       return {
-        store_subject_id, 
+        store_subject_id: C.pickone(storeSubjects).id,
         quantity,
         unit_price,
-        direction,
-        type,
-        created,
-        tenant_id,
+        direction, 
+        type, 
+        created: C.date({ year: 2016, month: C.pickone([5, 6, 7, 8]) }),
+        tenant_id: C.pickone(tenants).id,
+        tax_rate,
       };
-    }));
+    });
+    yield knex.batchInsert('store_orders', rows);
   });
 };
 

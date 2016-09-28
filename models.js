@@ -107,6 +107,7 @@ exports.store_orders = {
   invoice_id: t => t.integer('invoice_id').references('invoices.id'),
   direction: t => t.enum('direction', R.values(CONST.storeOrderDirections)).notNullable(),
   type: t => t.enum('type', R.values(CONST.storeOrderTypes)).notNullable(),
+  tax_rate: t => t.integer('tax_rate'),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
   tenant_id: t => t.integer('tenant_id').references('tenants.id'),
 };
