@@ -139,4 +139,20 @@ var object = function (req, res, next) {
 
 router.get('/object/:id', loginRequired, object);
 
+var update = function (req, res, next) {
+  return knex('store_orders') 
+  .where('id', req.params.id)
+  .update(R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body)))
+  .then(function () {
+    res.json({});
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+};
+
+router.put('/object/:id', loginRequired, restify.bodyParser(), update);
+
 module.exports = { router };
