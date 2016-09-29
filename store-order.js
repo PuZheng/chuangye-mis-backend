@@ -124,4 +124,19 @@ var create = function (req, res, next) {
 
 router.post('/object', loginRequired, restify.bodyParser(), create);
 
+var object = function (req, res, next) {
+  return knex('store_orders')
+  .where('id', req.params.id)
+  .then(function ([ obj ]) {
+    res.json(casing.camelize(obj));
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+};
+
+router.get('/object/:id', loginRequired, object);
+
 module.exports = { router };
