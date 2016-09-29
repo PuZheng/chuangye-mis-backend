@@ -11,6 +11,7 @@ var co = require('co');
 var storeOrderDef = require('./models')[TABLE_NAME];
 var storeSubjectDef = require('./models').store_subjects;
 var layerify = require('./utils/layerify');
+var R = require('ramda');
 
 var router = new  Router();
 
@@ -104,5 +105,23 @@ var list = function (req, res, next) {
 };
 
 router.get('/list', loginRequired, restify.queryParser(), list);
+
+var create = function (req, res, next) {
+  return knex('store_orders')
+  .insert(R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body)))
+  .returning('id')
+  .then(function ([id]) {
+    res.json({
+      id
+    });
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+};
+
+router.post('/object', loginRequired, restify.bodyParser(), create);
 
 module.exports = { router };
