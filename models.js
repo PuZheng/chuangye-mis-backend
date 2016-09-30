@@ -48,6 +48,8 @@ exports.invoices = {
   purchaser_id: t => t.integer('purchaser_id').references('entities.id'),
   notes: t => t.string('notes'),
   creator_id: t => t.integer('creator_id').references('users.id'),
+  amount: t => t.integer('amount').notNullable(), // 金额
+  tax_rate: t => t.integer('tax_rate'), // 有可能不牵扯到税额
 };
 
 exports.store_subjects = {
@@ -107,7 +109,6 @@ exports.store_orders = {
   invoice_id: t => t.integer('invoice_id').references('invoices.id'),
   direction: t => t.enum('direction', R.values(CONST.storeOrderDirections)).notNullable(),
   type: t => t.enum('type', R.values(CONST.storeOrderTypes)).notNullable(),
-  tax_rate: t => t.integer('tax_rate'),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
   tenant_id: t => t.integer('tenant_id').references('tenants.id'),
 };

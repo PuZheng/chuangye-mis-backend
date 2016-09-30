@@ -36,6 +36,12 @@ var makeInvoices = function () {
         purchaser_id: purchaser.id,
         notes: chance.sentence({ words: 10 }),
         creator_id: chance.pickone(accountants).id,
+        amount: chance.integer({ min: 1000, max: 50000 }),
+        tax_rate: R.ifElse(
+          R.propEq('name', '普通发票'),
+          R.always(undefined),
+          R.always(17)
+        )(invoiceType),
       };
     });
     yield knex.batchInsert('invoices', rows);

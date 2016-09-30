@@ -50,9 +50,10 @@ var fullfill = function (obj) {
     obj.accountTerm = yield getAccountTerm(obj.accountTermId);
     obj.vendor = yield getEntity(obj.vendorId);
     obj.purchaser = yield getEntity(obj.purchaserId);
-    obj.materialNotes = yield knex('material_notes').where('invoice_id', obj.id);
-    for (var mn of obj.materialNotes) {
-      mn.storeSubjects = yield getStoreSubject(mn.storeSubjectId);
+    obj.storeOrders = yield knex('store_orders').where('invoice_id', obj.id)
+    .then(casing.camelize);
+    for (let so of obj.storeOrders) {
+      so.storeSubject = yield getStoreSubject(so.storeSubjectId);
     }
     obj.creator = yield getUser(obj.creatorId);
     return obj;
@@ -78,14 +79,14 @@ router.get('/object/:id', loginRequired, function (req, res, next) {
   });
 });
 
-var fetchList = function (req, res, next) {
+var list = function (req, res, next) {
   let q = knex('invoices');
   co(function *() {
     // filters
-    for (var it of [ 'invoice_type_id', 'account_term_id', 'vendor_id', 'purchaser_id' ]) {
+    for (var it of [ 'invoice_type_id', 'account_term_id', 'vendor_id', 'purchaser_id', 'amount' ]) {
       req.params[it] && q.where(it, req.params[it]);
     }
-    let date_span = req.params.date_span;
+    let { date_span } = req.params;
     if (date_span) {
       let m = date_span.match(/in_(\d+)_days/);
       if (m) {
@@ -135,7 +136,7 @@ var fetchList = function (req, res, next) {
   });
 };
 
-router.get('/list', loginRequired, restify.queryParser(), fetchList);
+router.get('/list', loginRequired, restify.queryParser(), list);
 
 router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
   knex('invoices').whereRaw('UPPER(number) like ?', req.params.kw.toUpperCase() + '%')
