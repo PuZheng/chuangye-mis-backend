@@ -7,7 +7,7 @@ var casing = require('casing');
 var co = require('co');
 var knex = require('./knex');
 var invoiceDef = require('./models').invoices;
-var materialNotesDef = require('./models').material_notes;
+var storeOrderDef = require('./models').store_orders;
 var moment = require('moment');
 var getAccountTerm = require('./account-term').getObject;
 var getInvoiceType = require('./invoice-type').getObject;
@@ -21,17 +21,23 @@ router.post(
   function (req, res, next) {
     knex.transaction(function (trx) {
       return co(function *() {
-        let invoice = R.pick(Object.keys(invoiceDef), casing.snakeize(req.body));
-        invoice.creator_id = req.user.id;
-        let materialNotes = req.body.materialNotes;
+        let storeOrders = req.body.storeOrders;
+        let data = R.pick(Object.keys(invoiceDef), casing.snakeize(req.body));
+        data.creator_id = req.user.id;
         let [id] = yield trx
-        .insert(casing.snakeize(invoice))
+        .insert(data)
         .returning('id')
         .into('invoices');
-        for (var mn of (materialNotes || [])) {
-          mn = R.pick(Object.keys(materialNotesDef), casing.snakeize(mn));
-          mn.invoice_id = id;
-          yield trx.insert(mn).into('material_notes');
+        let [invoiceType] = yield knex('invoice_types')
+        .where('id', data.invoice_type_id)
+        .select('*')
+        .then(casing.camelize);
+        for (var so of (storeOrders || [])) {
+          so = R.pick(Object.keys(storeOrderDef), casing.snakeize(so));
+          so.type = invoiceType.storeOrderType;
+          so.direction = invoiceType.storeOrderDirection;
+          so.invoice_id = id;
+          yield trx.insert(so).into('store_orders');
         }
         res.send({id});
         next();
