@@ -55,11 +55,44 @@ var createInvoiceTypes = function (trx) {
   return trx.batchInsert('invoice_types', rows);
 };
 
+var createMeterTypes = function(trx) {
+  return trx.batchInsert('meter_types', [{ name: '电表' }, { name: '水表' }, { name: '蒸汽表' }]);
+};
+
+var createMeterReadings = function *(trx) {
+  let [{ id: meter_type_id }] = yield trx('meter_types').select('*')
+  .where('name', '电表');
+  yield trx.batchInsert('meter_readings', [{
+    name: '平电读数',
+    meter_type_id,
+  }, {
+    name: '谷电读数',
+    meter_type_id,
+  }, {
+    name: '峰电读数',
+    meter_type_id,
+  }]);
+  [{ id: meter_type_id }] = yield trx('meter_types').select('*')
+  .where('name', '水表');
+  yield trx.insert({
+    name: '读数',
+    meter_type_id
+  }).into('meter_readings');
+  [{ id: meter_type_id }] = yield trx('meter_types').select('*')
+  .where('name', '蒸汽表');
+  yield trx.insert({
+    name: '读数',
+    meter_type_id
+  }).into('meter_readings');
+};
+
 knex.transaction(function (trx) {
   return co(function *() {
     yield createAdmin(trx);
     yield createVoucherTypes(trx);
     yield createInvoiceTypes(trx);
+    yield createMeterTypes(trx);
+    yield * createMeterReadings(trx);
   });
 })
 .then(function () {

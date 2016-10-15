@@ -25,9 +25,10 @@ var fullfill = function fullfill(obj) {
     if (obj.departmentId) {
       obj.department = yield getDepartment(obj.departmentId);
     }
-    if (obj.parentElectricMeterId) {
-      obj.parentElectricMeter = yield getObject(obj.parentElectricMeterId);
+    if (obj.parentMeterId) {
+      obj.parentMeter = yield getObject(obj.parentMeterId);
     }
+    obj.meterType = yield knex('meter_types').select('*').where('id', obj.meterTypeId).then(casing.camelize);
     return obj;
   });
 };
@@ -115,7 +116,7 @@ var create = function (req, res, next) {
         return;
     }
     obj = R.pick(Object.keys(meterDef), 
-                     casing.snakeize(req.body));
+                 casing.snakeize(req.body));
     knex('meters')
     .insert(obj)
     .returning('id')

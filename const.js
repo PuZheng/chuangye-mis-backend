@@ -34,12 +34,6 @@ exports.meterStatus = {
   IDLE: '闲置',
 };
 
-exports.meterTypes = {
-  ELECTRIC: '电表',
-  WATER: '水表',
-  STEAM: '蒸汽表',
-};
-
 
 var Router = require('restify-router').Router;
 var loginRequired = require('./login-required');

@@ -122,6 +122,11 @@ exports.settings = {
   group: t => t.string('group'),
 };
 
+exports.meter_types = {
+  id: t => t.increments(),
+  name: t => t.string('name').notNullable().unique(),
+};
+
 exports.meters = {
   id: t => t.increments(),
   name: t => t.string('name').notNullable(),
@@ -132,5 +137,12 @@ exports.meters = {
   times: t => t.integer('times').notNullable().defaultTo(1),
   parent_meter_id: t => t.integer('parent_meter_id').references('meters.id'),
   status: t => t.enum('status', R.values(CONST.meterStatus)).notNullable().defaultTo(CONST.meterStatus.NORMAL),
-  type: t => t.enum('type', R.values(CONST.meterTypes)).notNullable()
+  meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
+};
+
+// 不同种类的设备可能有多个计数
+exports.meter_readings = {
+  id: t => t.increments(),
+  name: t => t.string('name').notNullable(),
+  meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
 };

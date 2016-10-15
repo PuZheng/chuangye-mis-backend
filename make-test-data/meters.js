@@ -2,18 +2,26 @@
 var knex = require('../knex');
 var logger = require('../logger');
 var meterStatus = require('../const').meterStatus;
-var meterTypes = require('../const').meterTypes;
 var co = require('co');
 
 
 var makeAmmeters = function () {
   return co(function *() {
-    let id = (yield knex('meters').insert({
+    let [{id: electricMeterTypeId}] = yield knex('meter_types')
+    .select('*')
+    .where('name', '电表');
+    let [{id: waterMeterTypeId}] = yield knex('meter_types')
+    .select('*')
+    .where('name', '水表');
+    let [{id: steamMeterTypeId}] = yield knex('meter_types')
+    .select('*')
+    .where('name', '蒸汽表');
+    let [id] = yield knex('meters').insert({
       name: '分配箱1',
       is_total: true,
       status: meterStatus.NORMAL,
-      type: meterTypes.ELECTRIC,
-    }).returning('id'))[0];
+      meter_type_id: electricMeterTypeId
+    }).returning('id');
     yield knex('meters').insert({
       name: '1',
       is_total: false,
@@ -21,13 +29,13 @@ var makeAmmeters = function () {
       times: 40,
       status: meterStatus.NORMAL,
       parent_meter_id: id,
-      type: meterTypes.ELECTRIC
+      meter_type_id: electricMeterTypeId
     });
     id = (yield knex('meters').insert({
       name: '线路1',
       is_total: true,
       status: meterStatus.NORMAL,
-      type: meterTypes.WATER,
+      meter_type_id: waterMeterTypeId,
     }).returning('id'))[0];
     yield knex('meters').insert({
       name: '1',
@@ -36,14 +44,14 @@ var makeAmmeters = function () {
       times: 40,
       status: meterStatus.NORMAL,
       parent_meter_id: id,
-      type: meterTypes.WATER,
+      meter_type_id: waterMeterTypeId,
     });
 
     id = (yield knex('meters').insert({
       name: '总表1',
       is_total: true,
       status: meterStatus.NORMAL,
-      type: meterTypes.STEAM,
+      meter_type_id: steamMeterTypeId,
     }).returning('id'))[0];
     yield knex('meters').insert({
       name: '1',
@@ -52,7 +60,7 @@ var makeAmmeters = function () {
       times: 40,
       status: meterStatus.NORMAL,
       parent_meter_id: id,
-      type: meterTypes.STEAM,
+      meter_type_id: steamMeterTypeId,
     });
   });
 };
