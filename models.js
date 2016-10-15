@@ -124,7 +124,7 @@ exports.settings = {
 
 exports.meter_types = {
   id: t => t.increments(),
-  name: t => t.string('name').notNullable(),
+  name: t => t.string('name').notNullable().unique(),
 };
 
 exports.meters = {
