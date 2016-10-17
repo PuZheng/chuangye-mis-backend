@@ -121,4 +121,36 @@ var update = function (req, res, next) {
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), update);
 
+var del = function (req, res, next) {
+  let { id } = req.params;
+  knex.transaction(function (trx) {
+    return co(function *() {
+      let [ meterType ] = yield trx.from('meter_types').where('id', id).select('*');
+      if (!meterType) {
+        res.json(404, {});
+        next();
+        return;
+      }
+      let [ { count: meterCnt } ] = yield trx.from('meters').where('meter_type_id', id).count('*');
+      if (Number(meterCnt) > 0) {
+        res.json(400, {
+          reason: '无法删除存在关联表设备的类型',
+        });
+        next();
+        return;
+      }
+      yield trx.where('meter_type_id', id).del().from('meter_readings');
+      yield trx.where('id', id).del().from('meter_types');
+      res.json({});
+      next();
+    });
+  })
+  .catch(function (e) {
+    logger.error(e.stack);
+    next(e);
+  });
+};
+
+router.del('/object/:id', loginRequired, del);
+
 module.exports = { router };
