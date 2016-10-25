@@ -145,4 +145,6 @@ exports.meter_readings = {
   id: t => t.increments(),
   name: t => t.string('name').notNullable(),
   meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
+  // 相关价格配置项， 用于和读数一起生成计费表单
+  price_setting_id: t => t.integer('price_setting_id').notNullable().references('settings.id'),
 };
