@@ -6,13 +6,14 @@ var logger = require('./logger');
 var co = require('co');
 var casing = require('casing');
 var getDepartment = require('./department').getObject;
+var getMeterType = require('./meter-type').getObject;
 var R = require('ramda');
 var meterDef = require('./models').meters;
 
 var router = new Router();
 
 var getObject = function getObject(id) {
-  return knex('meters') 
+  return knex('meters')
   .where('id', id)
   .select('*')
   .then(function ([obj]) {
@@ -28,14 +29,15 @@ var fullfill = function fullfill(obj) {
     if (obj.parentMeterId) {
       obj.parentMeter = yield getObject(obj.parentMeterId);
     }
-    obj.meterType = yield knex('meter_types').select('*').where('id', obj.meterTypeId).then(casing.camelize);
+    obj.meterType = yield getMeterType(obj.meterTypeId);
+    // obj.meterType = yield knex('meter_types').select('*').where('id', obj.meterTypeId).then(casing.camelize);
     return obj;
   });
 };
 
 router.get(
-  '/object/:id', 
-  loginRequired, 
+  '/object/:id',
+  loginRequired,
   function (req, res, next) {
     return getObject(req.params.id)
     .then(fullfill)
@@ -108,14 +110,14 @@ var create = function (req, res, next) {
   .select('*')
   .then(function ([obj]) {
     if (obj) {
-        res.json(400, {
-          fields: {
-            name: '已经存在该名称',
-          }
-        });
-        return;
+      res.json(400, {
+        fields: {
+          name: '已经存在该名称',
+        }
+      });
+      return;
     }
-    obj = R.pick(Object.keys(meterDef), 
+    obj = R.pick(Object.keys(meterDef),
                  casing.snakeize(req.body));
     knex('meters')
     .insert(obj)
@@ -127,7 +129,7 @@ var create = function (req, res, next) {
     .catch(function (e) {
       logger.error(e);
       next(e);
-    }); 
+    });
   });
 };
 

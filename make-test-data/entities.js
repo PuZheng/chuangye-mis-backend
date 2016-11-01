@@ -20,7 +20,7 @@ module.exports = makeEntities;
 
 if (require.main === module) {
   makeEntities().then(function () {
-    logger.info('completed');
+    logger.info('entities completed');
     knex.destroy();
   }, function (e) {
     logger.error(e);

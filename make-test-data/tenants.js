@@ -58,7 +58,7 @@ module.exports = makeTenants;
 
 if (require.main === module) {
   makeTenants().then(function () {
-    logger.info('completed');
+    logger.info('tenants completed');
     knex.destroy();
   }, function (e) {
     logger.error(e);

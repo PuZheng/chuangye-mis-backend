@@ -3,78 +3,58 @@ var knex = require('../knex');
 var logger = require('../logger');
 var meterStatus = require('../const').meterStatus;
 var co = require('co');
+var R = require('ramda');
+var Chance = require('chance');
+var C = new Chance();
 
 
-var makeAmmeters = function () {
-  return co(function *() {
-    let [{id: electricMeterTypeId}] = yield knex('meter_types')
-    .select('*')
-    .where('name', '电表');
-    let [{id: waterMeterTypeId}] = yield knex('meter_types')
-    .select('*')
-    .where('name', '水表');
-    let [{id: steamMeterTypeId}] = yield knex('meter_types')
-    .select('*')
-    .where('name', '蒸汽表');
-    let [id] = yield knex('meters').insert({
-      name: '分配箱1',
+var makeMeters = function *(trx, type) {
+  let [{id: meter_type_id}] = yield trx('meter_types')
+  .select('*')
+  .where('name', type);
+  // make total meters
+  yield trx.batchInsert('meters', R.range(1, 9).map(function (n) {
+    return {
+      name: '总' + type + n,
       is_total: true,
       status: meterStatus.NORMAL,
-      meter_type_id: electricMeterTypeId
-    }).returning('id');
-    yield knex('meters').insert({
-      name: '1',
+      meter_type_id
+    };
+  }));
+  let totalMeterIdList = (yield trx('meters')
+                          .where({
+                            is_total: true,
+                            meter_type_id,
+                          })
+                          .select('id'))
+                          .map(R.prop('id'));
+  let departmentIdList = (yield trx('departments').select('id')).map(R.prop('id'));
+  yield trx.batchInsert('meters', departmentIdList.map(function (department_id, idx) {
+    return {
+      name: '设备' + idx,
       is_total: false,
-      department_id: (yield knex('departments').select('*'))[0].id,
+      department_id,
       times: 40,
       status: meterStatus.NORMAL,
-      parent_meter_id: id,
-      meter_type_id: electricMeterTypeId
-    });
-    id = (yield knex('meters').insert({
-      name: '线路1',
-      is_total: true,
-      status: meterStatus.NORMAL,
-      meter_type_id: waterMeterTypeId,
-    }).returning('id'))[0];
-    yield knex('meters').insert({
-      name: '1',
-      is_total: false,
-      department_id: (yield knex('departments').select('*'))[0].id,
-      times: 40,
-      status: meterStatus.NORMAL,
-      parent_meter_id: id,
-      meter_type_id: waterMeterTypeId,
-    });
-
-    id = (yield knex('meters').insert({
-      name: '总表1',
-      is_total: true,
-      status: meterStatus.NORMAL,
-      meter_type_id: steamMeterTypeId,
-    }).returning('id'))[0];
-    yield knex('meters').insert({
-      name: '1',
-      is_total: false,
-      department_id: (yield knex('departments').select('*'))[0].id,
-      times: 40,
-      status: meterStatus.NORMAL,
-      parent_meter_id: id,
-      meter_type_id: steamMeterTypeId,
-    });
-  });
+      parent_meter_id: C.pickone(totalMeterIdList),
+      meter_type_id
+    };
+  }));
 };
 
-
-module.exports = makeAmmeters;
-
 if (require.main === module) {
-  makeAmmeters()
-  .then(function () {
-    logger.info('completed');
-    knex.destroy();
-  }, function (e) {
-    logger.error(e);
-    knex.destroy();
+  knex.transaction(function (trx) {
+    return co(function *() {
+      try {
+        yield makeMeters(trx, '电表');
+        yield makeMeters(trx, '水表');
+        yield makeMeters(trx, '蒸汽表');
+        logger.info('meters completed');
+      } catch (e) {
+        logger.error(e);
+      } finally {
+        knex.destroy();
+      }
+    });
   });
 }

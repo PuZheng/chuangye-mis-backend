@@ -109,14 +109,14 @@ var list = function (req, res, next) {
       let [col, order] = req.params.sort_by.split('.');
       order = order || 'asc';
       switch (col) {
-        case 'account_term': {
-          q.join('account_terms', 'account_terms.id', '=', 'invoices.account_term_id').orderBy('account_terms.id');
-          break;
-        }
-        default: {
-          q.orderBy(col, order);
-          break;
-        }
+      case 'account_term': {
+        q.join('account_terms', 'account_terms.id', '=', 'invoices.account_term_id').orderBy('account_terms.id');
+        break;
+      }
+      default: {
+        q.orderBy(col, order);
+        break;
+      }
       }
     }
 

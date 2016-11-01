@@ -46,8 +46,8 @@ var makeStoreOrders = function () {
         store_subject_id: C.pickone(storeSubjects).id,
         quantity,
         unit_price,
-        direction, 
-        type, 
+        direction,
+        type,
         created: C.date({ year: 2016, month: C.pickone([5, 6, 7, 8]) }),
         tenant_id: C.pickone(tenants).id,
         invoice_id: invoice && invoice.id,
@@ -61,7 +61,7 @@ var makeStoreOrders = function () {
       }
       let sos = yield knex('store_orders').where('invoice_id', invoice.id).select('*');
       let amount = R.sum(sos.map(function ({ quantity, unit_price }) {
-        return quantity * unit_price; 
+        return quantity * unit_price;
       }));
       if (invoice.amount != amount) {
         yield knex('invoices').where('id', invoice.id).update({
@@ -77,7 +77,7 @@ module.exports = makeStoreOrders;
 if (require.main === module) {
   makeStoreOrders()
   .then(function () {
-    logger.info('completed');
+    logger.info('store orders completed');
     knex.destroy();
   }, function (e) {
     logger.error(e);

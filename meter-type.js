@@ -22,7 +22,7 @@ var list = function (req, res, next) {
       .where('meter_readings.meter_type_id', it.id)
       .select([
         ...Object.keys(meterReadingDef)
-        .map(col => 'meter_readings.' + col), 
+        .map(col => 'meter_readings.' + col),
         ...Object.keys(settingsDef)
         .map(col => 'settings.' + col + ' as price_setting__' + col),
       ])
@@ -70,7 +70,7 @@ var create = function (req, res, next) {
       next(e);
     });
   });
-  
+
 };
 
 router.post('/object', loginRequired, restify.bodyParser(), create);
@@ -98,6 +98,26 @@ var object = function (req, res, next) {
   });
 };
 
+var getObject = function (id) {
+  return co(function *() {
+    let [obj] = yield knex('meter_types')
+    .where('id', id)
+    .then(casing.camelize);
+    obj.meterReadings = yield knex('meter_readings')
+    .join('settings', 'settings.id', 'meter_readings.price_setting_id')
+    .where('meter_type_id', obj.id)
+    .select([
+      ...Object.keys(meterReadingDef)
+      .map(it => 'meter_readings.' + it),
+      ...Object.keys(settingsDef)
+      .map(it => 'settings.' + it + ' as price_setting__' + it),
+    ])
+    .then(R.map(layerify))
+    .then(R.map(casing.camelize));
+    return obj;
+  });
+};
+
 router.get('/object/:id', loginRequired, object);
 
 var update = function (req, res, next) {
@@ -114,8 +134,8 @@ var update = function (req, res, next) {
                                        .then(R.map(R.prop('id'))));
       for (let mr of meterReadings) {
         if (!mr.id) {
-          yield trx.insert({ 
-            name: mr.name, 
+          yield trx.insert({
+            name: mr.name,
             meter_type_id: id,
             price_setting_id: mr.priceSettingId,
           })
@@ -171,4 +191,4 @@ var del = function (req, res, next) {
 
 router.del('/object/:id', loginRequired, del);
 
-module.exports = { router };
+module.exports = { router, getObject };

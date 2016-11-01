@@ -21,7 +21,7 @@ module.exports = makeAccountTerms;
 
 if (require.main === module) {
   makeAccountTerms().then(function () {
-    logger.info('completed');
+    logger.info('account terms completed');
     knex.destroy();
   }, function (e) {
     logger.error(e);

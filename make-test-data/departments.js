@@ -17,7 +17,7 @@ module.exports = makeDepartments;
 
 if (require.main === module) {
   makeDepartments().then(function () {
-    logger.info('completed');
+    logger.info('departments completed');
     knex.destroy();
   }, function (e) {
     logger.error(e);

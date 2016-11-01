@@ -27,14 +27,14 @@ co(function *() {
       voucherSubjectId: voucherSubject.id,
       isPublic: chance.bool(),
       notes: chance.sentence({ words: 5 }),
-      payerId: payer.id, 
+      payerId: payer.id,
       recipientId: recipient.id,
       creatorId: chance.pickone(cashiers).id,
     });
   });
   yield knex.batchInsert('vouchers', rows);
 }).then(function () {
-  logger.info('completed');
+  logger.info('vouchers completed');
   knex.destroy();
 }, function (e) {
   logger.error(e);

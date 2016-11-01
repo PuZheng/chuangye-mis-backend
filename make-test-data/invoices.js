@@ -50,7 +50,7 @@ var makeInvoices = function () {
 
 if (require.main === module) {
   makeInvoices().then(function () {
-    logger.info('completed');
+    logger.info('invoices completed');
     knex.destroy();
   }, function (e) {
     logger.error(e.stack);

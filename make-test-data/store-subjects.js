@@ -19,7 +19,7 @@ module.exports = makeStoreSubjects;
 
 if (require.main === module) {
   makeStoreSubjects().then(function () {
-    logger.info('completed');
+    logger.info('store subjects completed');
     knex.destroy();
   }, function (e) {
     logger.error(e);

@@ -21,7 +21,7 @@ knex.transaction(function (trx) {
   });
   return trx.batchInsert('voucher_subjects', casing.snakeize(list));
 }).then(function () {
-  logger.info('completed');
+  logger.info('voucher subjects1 completed');
   knex.destroy();
 }, function (e) {
   logger.error(e);

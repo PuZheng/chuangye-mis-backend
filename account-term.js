@@ -7,7 +7,7 @@ var logger = require('./logger');
 var R = require('ramda');
 var objDef = require('./models').account_terms;
 
-var router = new  Router();
+var router = new Router();
 
 var getObject = function (id) {
   return knex('account_terms')
@@ -19,7 +19,7 @@ var getObject = function (id) {
 };
 
 router.get(
-  '/list', loginRequired, 
+  '/list', loginRequired,
   function (req, res, next) {
     knex('account_terms')
     .select('*')

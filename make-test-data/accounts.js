@@ -24,12 +24,12 @@ var makeAccounts = function () {
 
 if (require.main === module) {
   makeAccounts().then(function () {
-    logger.info('completed');
+    logger.info('accounts completed');
     knex.destroy();
   }, function (e) {
     logger.error(e);
     knex.destroy();
   });
-};
+}
 
 module.exports = makeAccounts;

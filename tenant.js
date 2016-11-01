@@ -61,15 +61,15 @@ router.get('/hints/:kw', loginRequired, function(req, res, next) {
   .orWhere(knex.raw('UPPER(entities.acronym) like ?', kw.toUpperCase() + '%'))
   .select('entities.name', 'entities.acronym')
   .then(function (list) {
-      res.json({ 
-        data: list.map(function (i) {
-          return {
-            text: i.name,
-            acronym: i.acronym
-          };
-        })
-      });
-      next();
+    res.json({
+      data: list.map(function (i) {
+        return {
+          text: i.name,
+          acronym: i.acronym
+        };
+      })
+    });
+    next();
   })
   .catch(function (e) {
     logger.error(e);
@@ -146,7 +146,7 @@ var newObject = function (req, res, next) {
       .insert({
         entity_id,
         department_id: departmentId,
-        contact: contact, 
+        contact: contact,
       })
       .into('tenants')
       .returning('id');
@@ -155,9 +155,9 @@ var newObject = function (req, res, next) {
     });
   })
   .catch(function (e) {
-      logger.error(e);
-      next(e);
-  }); 
+    logger.error(e);
+    next(e);
+  });
 };
 
 router.post('/object', loginRequired, restify.bodyParser(), newObject);
@@ -165,7 +165,7 @@ router.post('/object', loginRequired, restify.bodyParser(), newObject);
 var updateObject = function (req, res, next) {
   co(function *() {
     let { id } = req.params;
-    let [tenant] = yield knex('tenants') 
+    let [tenant] = yield knex('tenants')
     .where('id', id)
     .select('*');
     if (!tenant) {
@@ -174,7 +174,7 @@ var updateObject = function (req, res, next) {
       });
       next();
       return;
-    };
+    }
 
     let {
       entity: {
