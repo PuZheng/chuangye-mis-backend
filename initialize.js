@@ -19,7 +19,7 @@ var createAdmin = function (trx) {
       username: admin.username,
       password: admin.password,
       role: roles.ADMIN
-    } 
+    }
   );
 };
 
@@ -33,23 +33,23 @@ var createVoucherTypes = function (trx) {
 
 var createInvoiceTypes = function (trx) {
   let rows = [
-    { 
-      name: '进项增值税', 
+    {
+      name: '进项增值税',
       vendor_type: entityTypes.SUPPLIER,
       purchaser_type: entityTypes.TENANT,
       is_vat: true,
       store_order_type: storeOrderTypes.MATERIAL,
       store_order_direction: storeOrderDirections.INBOUND,
     }, {
-      name: '销项增值税', 
-      vendor_type: entityTypes.TENANT, 
-      purchaser_type: entityTypes.CUSTOMER, 
-      is_vat: true, 
+      name: '销项增值税',
+      vendor_type: entityTypes.TENANT,
+      purchaser_type: entityTypes.CUSTOMER,
+      is_vat: true,
       store_order_type: storeOrderTypes.PRODUCT,
       store_order_direction: storeOrderDirections.OUTBOUND,
     }, {
-      name: '普通发票', 
-      purchaser_type: entityTypes.OWNER, 
+      name: '普通发票',
+      purchaser_type: entityTypes.OWNER,
       is_vat: false,
     }
   ];
@@ -88,7 +88,7 @@ var createMeterReadings = function *(trx) {
   yield trx.insert({
     name: '读数',
     meter_type_id,
-    price_setting_id: (yield trx('settings').select('id').where('name', '工业水价'))[0].id,
+    price_setting_id: (yield trx('settings').select('id').where('name', '蒸汽价'))[0].id,
   }).into('meter_readings');
 };
 
