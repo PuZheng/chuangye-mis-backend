@@ -55,6 +55,24 @@ var list = function (req, res, next) {
 
 router.get('/list', loginRequired, restify.queryParser(), list);
 
+var update = function (req, res, next) {
+  let {def} = req.body;
+  return knex('charge_bills').update({
+    def,
+  })
+  .where('id', req.params.id)
+  .then(function () {
+    res.json({});
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+};
+
+router.put('/object/:id', loginRequired, restify.bodyParser(), update);
+
 
 
 module.exports = {
