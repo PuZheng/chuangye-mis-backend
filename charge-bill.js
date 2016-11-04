@@ -34,8 +34,28 @@ var create = function (req, res, next) {
   });
 };
 
-router.post('/object/', loginRequired,
-            restify.bodyParser(), create);
+router.post('/object/', loginRequired, restify.bodyParser(), create);
+
+var list = function (req, res, next) {
+  let q = knex('charge_bills');
+  let { account_term_id } = req.params;
+  if (account_term_id) {
+    q.where('account_term_id', account_term_id);
+  }
+  q.select('*')
+  .then(function (data) {
+    res.json({ data, });
+    next();
+  })
+  .catch(function (e) {
+    logger.error(e);
+    next(e);
+  });
+};
+
+router.get('/list', loginRequired, restify.queryParser(), list);
+
+
 
 module.exports = {
   router,
