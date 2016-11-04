@@ -27,7 +27,9 @@ router.get(
     .then(function (list) {
       res.json({ data: casing.camelize(list) });
       next();
-    }).catch(function (e) {
+    })
+    .catch(function (e) {
+      logger.error(e);
       next(e);
     });
   }

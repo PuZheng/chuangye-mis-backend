@@ -17,7 +17,7 @@ exports.invoice_types = {
   vendor_type: t => t.enum('vendor_type', R.values(CONST.entityTypes)),
   purchaser_type: t => t.enum('purchaser_type', R.values(CONST.entityTypes)),
   is_vat: t => t.boolean('is_vat'),
-  store_order_type: t => t.enum('store_order_type', 
+  store_order_type: t => t.enum('store_order_type',
                                 R.values(CONST.storeOrderTypes)),
   store_order_direction: t => t.enum('store_order_direction',
                                     R.values(CONST.storeOrderDirections)),
@@ -147,4 +147,10 @@ exports.meter_readings = {
   meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
   // 相关价格配置项， 用于和读数一起生成计费表单
   price_setting_id: t => t.integer('price_setting_id').notNullable().references('settings.id'),
+};
+
+exports.charge_bills = {
+  id: t => t.increments(),
+  account_term_id: t => t.integer('account_term_id').references('account_terms.id').notNullable().unique(),
+  def: t => t.jsonb('def'),
 };

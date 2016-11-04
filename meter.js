@@ -30,7 +30,6 @@ var fullfill = function fullfill(obj) {
       obj.parentMeter = yield getObject(obj.parentMeterId);
     }
     obj.meterType = yield getMeterType(obj.meterTypeId);
-    // obj.meterType = yield knex('meter_types').select('*').where('id', obj.meterTypeId).then(casing.camelize);
     return obj;
   });
 };
