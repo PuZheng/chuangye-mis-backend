@@ -34,7 +34,6 @@ exports.meterStatus = {
   IDLE: '闲置',
 };
 
-
 var Router = require('restify-router').Router;
 var loginRequired = require('./login-required');
 var router = new Router();
@@ -44,4 +43,3 @@ router.get('/', loginRequired, function (req, res, next) {
   next();
 });
 exports.router = router;
-

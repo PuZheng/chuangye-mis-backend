@@ -136,7 +136,8 @@ exports.meters = {
   // 倍数
   times: t => t.integer('times').notNullable().defaultTo(1),
   parent_meter_id: t => t.integer('parent_meter_id').references('meters.id'),
-  status: t => t.enum('status', R.values(CONST.meterStatus)).notNullable().defaultTo(CONST.meterStatus.NORMAL),
+  status: t => t.enum('status', R.values(CONST.meterStatus)).notNullable()
+  .defaultTo(CONST.meterStatus.NORMAL),
   meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
 };
 
@@ -151,6 +152,16 @@ exports.meter_readings = {
 
 exports.charge_bills = {
   id: t => t.increments(),
-  account_term_id: t => t.integer('account_term_id').references('account_terms.id').notNullable().unique(),
+  account_term_id: t => t.integer('account_term_id')
+  .references('account_terms.id').notNullable().unique(),
   def: t => t.jsonb('def'),
+};
+
+exports.payment_records = {
+  id: t => t.increments(),
+  department_id: t => t.integer('department_id').references('departments.id'),
+  finished: t => t.boolean('finished'),
+  created: t => t.timestamp('created').defaultTo(knex.fn.now()),
+  amount: t => t.timestamp('amount'),
+  reason: t => t.string('reason')
 };
