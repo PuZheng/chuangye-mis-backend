@@ -160,6 +160,8 @@ exports.charge_bills = {
 exports.payment_records = {
   id: t => t.increments(),
   department_id: t => t.integer('department_id').references('departments.id'),
+  account_term_id: t => t.integer('account_term_id')
+  .references('account_terms.id').notNullable().unique(),
   finished: t => t.boolean('finished'),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
   amount: t => t.timestamp('amount'),
