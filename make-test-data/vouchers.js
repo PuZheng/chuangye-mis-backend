@@ -30,6 +30,7 @@ co(function *() {
       payerId: payer.id,
       recipientId: recipient.id,
       creatorId: chance.pickone(cashiers).id,
+      amount: chance.integer({ min: 10000, max: 99999 }),
     });
   });
   yield knex.batchInsert('vouchers', rows);
