@@ -1,12 +1,16 @@
 var restify = require('restify');
 var logger = require('./logger');
 var config = require('./config');
+var bunyan = require('bunyan');
 
 if (config.get('env') === 'production') {
   require('longjohn');
 }
 
-var server = restify.createServer();
+var server = restify.createServer({
+  name: 'chuangye-mis api',
+  log: logger,
+});
 server.opts(/\.*/, function (req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Origin, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Response-Time, X-PINGOTHER, X-CSRF-Token, authorization');
@@ -26,15 +30,21 @@ let apps = [
 for (let app of apps) {
   require('./' + app).router.applyRoutes(server, '/' + app);
 }
-// server.on('after', restify.auditLogger({
-//   log: bunyan.createLogger({
-//     name: 'audit',
-//     stream: process.stdout,
-//   }),
-//   body: true
-// }));
+if (config.get('audit')) {
+  server.on('after', restify.auditLogger({
+    log: bunyan.createLogger({
+      name: 'audit',
+    }),
+    body: true
+  }));
+}
+server.pre(function (req, res, next) {
+  req.log.info({ req }, 'start');
+  return next();
+});
+
 server.on('uncaughtException', function uncaughtException(req, res, route, err) {
-  logger.error(err.stack);
+  logger.error(err);
   res.send(err);
 });
 

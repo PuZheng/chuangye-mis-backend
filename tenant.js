@@ -1,7 +1,6 @@
 var restify = require('restify');
 var Router = require('restify-router').Router;
 var knex = require('./knex');
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var co = require('co');
 var casing = require('casing');
@@ -47,9 +46,9 @@ router.get('/object/:id', loginRequired, function (req, res, next) {
     res.json(tenant);
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 
@@ -71,9 +70,9 @@ router.get('/hints/:kw', loginRequired, function(req, res, next) {
     });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 
@@ -105,9 +104,9 @@ var fetchList = function (req, res, next) {
     });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -154,9 +153,9 @@ var newObject = function (req, res, next) {
       next();
     });
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -235,9 +234,9 @@ var updateObject = function (req, res, next) {
     res.json({});
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 

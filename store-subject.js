@@ -1,6 +1,5 @@
 var Router = require('restify-router').Router;
 var router = new  Router();
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var knex = require('./knex');
@@ -20,9 +19,9 @@ router.get('/list', loginRequired, restify.queryParser(), function (req, res, ne
   .then(function (list) {
     res.json({ data: casing.camelize(list) });
     next();
-  }).catch(function (e) {
-    logger.error(e);
-    next(e);
+  }).catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 

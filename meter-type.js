@@ -4,7 +4,6 @@ var knex = require('./knex');
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var co = require('co');
-var logger = require('./logger');
 var R = require('ramda');
 var layerify = require('./utils/layerify');
 var { meter_readings: meterReadingDef, settings: settingsDef } = require('./models');
@@ -65,9 +64,9 @@ var create = function (req, res, next) {
       res.send({ id: meterTypeId });
       next();
     })
-    .catch(function (e) {
-      logger.error(e.stack);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   });
 
@@ -150,9 +149,9 @@ var update = function (req, res, next) {
       res.json({});
       next();
     })
-    .catch(function (e) {
-      logger.error(e.stack);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   });
 };
@@ -183,9 +182,9 @@ var del = function (req, res, next) {
       next();
     });
   })
-  .catch(function (e) {
-    logger.error(e.stack);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 

@@ -2,7 +2,6 @@ var Router = require('restify-router').Router;
 var restify = require('restify');
 var knex = require('./knex');
 var loginRequired = require('./login-required');
-var logger = require('./logger');
 var co = require('co');
 var casing = require('casing');
 var getDepartment = require('./department').getObject;
@@ -44,9 +43,9 @@ router.get(
       res.json(obj);
       next();
     })
-    .catch(function (e) {
-      logger.error(e);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   }
 );
@@ -66,9 +65,9 @@ var getHints = function getHints(req, res, next) {
     });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -125,9 +124,9 @@ var create = function (req, res, next) {
       res.json({ id });
       next();
     })
-    .catch(function (e) {
-      logger.error(e);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   });
 };

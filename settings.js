@@ -1,6 +1,5 @@
 var restify = require('restify');
 var Router = require('restify-router').Router;
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var knex = require('./knex');
 var casing = require('casing');
@@ -12,9 +11,10 @@ var list = function (req, res, next) {
   .then(function (list) {
     res.json({ data: casing.camelize(list) });
     next();
-  }, function (e) {
-    logger.error(e);
-    next(e);
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -28,9 +28,10 @@ var edit = function (req, res, next) {
   .then(function () {
     res.json({});
     next();
-  }, function (e) {
-    logger.error(e);
-    next(e);
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 

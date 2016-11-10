@@ -1,7 +1,6 @@
 var restify = require('restify');
 var Router = require('restify-router').Router;
 var knex = require('./knex');
-var logger = require('./logger');
 var permissionRequired = require('./permission-required');
 var loginRequired = require('./login-required');
 var casing = require('casing');
@@ -39,9 +38,9 @@ var listCb = function (req, res, next) {
     });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -84,9 +83,9 @@ var updateCb = function (req, res, next) {
     res.json({});
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -95,16 +94,16 @@ router.put('/object/:id', loginRequired, permissionRequired('edit.user'), restif
 var create = function (req, res, next) {
   let data = R.pick(Object.keys(objDef), casing.snakeize(req.body));
   return co(function *() {
-    let [{ count }] = yield knex('users') 
+    let [{ count }] = yield knex('users')
     .where('username', data.username)
     .count();
     if (Number(count) > 0) {
-        res.json(400, {
-          fields: {
-            username: '已经存在该名称',
-          }
-        });
-        return;
+      res.json(400, {
+        fields: {
+          username: '已经存在该名称',
+        }
+      });
+      return;
     }
     if (data.password) {
       data.password = knex.raw('crypt(?, gen_salt(\'md5\'))', [data.password]);
@@ -117,10 +116,10 @@ var create = function (req, res, next) {
       next();
     });
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
-  }); 
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
 };
 
 router.post('/object', loginRequired, permissionRequired('edit.user'), restify.bodyParser(), create);

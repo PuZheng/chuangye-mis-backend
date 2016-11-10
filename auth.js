@@ -1,8 +1,7 @@
 var restify = require('restify');
 var Router = require('restify-router').Router;
 var router = new  Router();
-var logger = require('./logger');
-var knex = require('./knex');;
+var knex = require('./knex');
 var sign = require('./jwt-sign');
 var co = require('co');
 var R = require('ramda');
@@ -28,9 +27,9 @@ router.post('/login', restify.bodyParser(), function loginCb(req, res, next) {
     user.token = yield sign(user);
     res.json(user);
     next();
-  }).catch(function (error) {
-    logger.error(error);
-    next(error);
+  }).catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 

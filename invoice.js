@@ -1,7 +1,6 @@
 var restify = require('restify');
 var Router = require('restify-router').Router;
 var router = new  Router();
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var co = require('co');
@@ -43,9 +42,9 @@ router.post(
         next();
       });
     })
-    .catch(function (e) {
-      logger.error(e.stack);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   }
 );
@@ -79,9 +78,9 @@ router.get('/object/:id', loginRequired, function (req, res, next) {
   getObject(req.params.id).then(function (invoice) {
     res.json(invoice);
     next();
-  }).catch(function (e) {
-    logger.error(e);
-    next(e);
+  }).catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 
@@ -136,9 +135,9 @@ var list = function (req, res, next) {
     });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -150,9 +149,9 @@ router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
     res.json({ data: list.map(it => it.number) });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 

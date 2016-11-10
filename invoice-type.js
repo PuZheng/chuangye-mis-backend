@@ -4,7 +4,6 @@ var router = new  Router();
 var casing = require('casing');
 var loginRequired = require('./login-required');
 var knex = require('./knex');
-var logger = require('./logger');
 var objDef = require('./models').invoice_types;
 var R = require('ramda');
 
@@ -44,16 +43,16 @@ var getHints = function(req, res, next) {
   .where('name', 'like', kw + '%')
   .select('name')
   .then(function (list) {
-      res.json({ 
-        data: list.map(function ({ name }) {
-          return name;
-        })
-      });
-      next();
+    res.json({
+      data: list.map(function ({ name }) {
+        return name;
+      })
+    });
+    next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -83,9 +82,9 @@ var create = function (req, res, next) {
       });
       next();
     })
-    .catch(function (e) {
-      logger.error(e);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   });
 
