@@ -9,7 +9,7 @@ for (var [tableName, def] of R.toPairs(models)) {
   schema = schema.createTableIfNotExists(tableName, function (def) {
     return function (table) {
       logger.info('create table: ' + table._tableName);
-      for (var [fieldName, fieldDef] of R.toPairs(def)) {
+      for (let [, fieldDef] of R.toPairs(def)) {
         fieldDef(table);
       }
     };

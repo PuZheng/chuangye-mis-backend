@@ -103,6 +103,7 @@ var fetchList = function (req, res, next) {
       q.offset((req.params.page - 1) * page_size).limit(page_size);
     }
     let data = yield q.select('vouchers.*');
+    console.error(data[0]);
     for (var i = 0; i < data.length; ++i) {
       data[i] = yield fullfill(casing.camelize(data[i]));
       data[i].date = moment(data[i].date).format('YYYY-MM-DD');

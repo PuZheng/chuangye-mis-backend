@@ -78,6 +78,7 @@ exports.voucher_subjects = {
 exports.vouchers = {
   id: t => t.increments(),
   number: t => t.string('number').notNullable(),
+  amount: t => t.integer('amount').notNullable(),
   date: t => t.date('date'),
   voucher_type_id: t => t.integer('voucher_type_id').references('voucher_types.id'),
   voucher_subject_id: t => t.integer('voucher_subject_id').references('voucher_subjects.id'),
