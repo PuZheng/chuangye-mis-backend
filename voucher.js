@@ -1,7 +1,6 @@
 var moment = require('moment');
 var Router = require('restify-router').Router;
 var knex = require('./knex');
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var restify = require('restify');
@@ -46,9 +45,9 @@ var newObject = function newObject(req, res, next) {
     res.send({ id });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -58,9 +57,9 @@ router.get('/object/:id', loginRequired, function (req, res, next) {
   getObject(req.params.id).then(function (o) {
     res.json(o);
     next();
-  }).catch(function (e) {
-    logger.error(e);
-    next(e);
+  }).catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 
@@ -103,7 +102,6 @@ var fetchList = function (req, res, next) {
       q.offset((req.params.page - 1) * page_size).limit(page_size);
     }
     let data = yield q.select('vouchers.*');
-    console.error(data[0]);
     for (var i = 0; i < data.length; ++i) {
       data[i] = yield fullfill(casing.camelize(data[i]));
       data[i].date = moment(data[i].date).format('YYYY-MM-DD');
@@ -125,9 +123,9 @@ router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
     res.json({ data: list.map(it => it.number) });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 

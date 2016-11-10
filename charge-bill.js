@@ -2,7 +2,6 @@ var restify = require('restify');
 var Router = require('restify-router').Router;
 var knex = require('./knex');
 var loginRequired = require('./login-required');
-var logger = require('./logger');
 var co = require('co');
 
 var router = new Router();
@@ -28,9 +27,9 @@ var create = function (req, res, next) {
       next();
     });
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -47,9 +46,9 @@ var list = function (req, res, next) {
     res.json({ data, });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -65,9 +64,9 @@ var update = function (req, res, next) {
     res.json({});
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 

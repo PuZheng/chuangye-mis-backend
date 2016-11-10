@@ -2,7 +2,6 @@ const TABLE_NAME = 'store_orders';
 
 var restify = require('restify');
 var Router = require('restify-router').Router;
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var knex = require('./knex');
 var moment = require('moment');
@@ -23,20 +22,20 @@ var list = function (req, res, next) {
     for (let col of ['date_span', 'type', 'direction', 'subject_id', 'tenant_id']) {
       let v = req.params[col];
       switch (col) {
-        case 'date_span': {
-          let m = v.match(/in_(\d+)_days/);
-          if (m) {
-            let target = moment().subtract(m[1], 'days').toDate();
-            q.where(TABLE_NAME + '.created', '>=', target);
-          }
-          break;
+      case 'date_span': {
+        let m = v.match(/in_(\d+)_days/);
+        if (m) {
+          let target = moment().subtract(m[1], 'days').toDate();
+          q.where(TABLE_NAME + '.created', '>=', target);
         }
-        case 'subject_id': {
-          v && q.where(TABLE_NAME + '.store_subject_id', v);
-          break;
-        }
-        default: 
-          v && q.where(TABLE_NAME + '.' + col, v);
+        break;
+      }
+      case 'subject_id': {
+        v && q.where(TABLE_NAME + '.store_subject_id', v);
+        break;
+      }
+      default:
+        v && q.where(TABLE_NAME + '.' + col, v);
       }
     }
 
@@ -47,14 +46,14 @@ var list = function (req, res, next) {
       let [col, order] = req.params.sort_by.split('.');
       order = order || 'asc';
       switch (col) {
-        case 'total_price': {
-          q.orderByRaw('(quantity * unit_price) ' + order);
-          break;
-        }
-        default: {
-          q.orderBy(col, order);
-          break;
-        }
+      case 'total_price': {
+        q.orderByRaw('(quantity * unit_price) ' + order);
+        break;
+      }
+      default: {
+        q.orderBy(col, order);
+        break;
+      }
       }
     }
 
@@ -98,9 +97,9 @@ var list = function (req, res, next) {
     });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -116,9 +115,9 @@ var create = function (req, res, next) {
     });
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
@@ -131,25 +130,25 @@ var object = function (req, res, next) {
     res.json(casing.camelize(obj));
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 
 router.get('/object/:id', loginRequired, object);
 
 var update = function (req, res, next) {
-  return knex('store_orders') 
+  return knex('store_orders')
   .where('id', req.params.id)
   .update(R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body)))
   .then(function () {
     res.json({});
     next();
   })
-  .catch(function (e) {
-    logger.error(e);
-    next(e);
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 };
 

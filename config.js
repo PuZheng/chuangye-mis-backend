@@ -17,7 +17,7 @@ var conf = convict({
       doc: 'if debug knex',
       format: Boolean,
       env: 'KNEX_DEBUG',
-      default: true
+      default: false
     }
   },
   admin: {
@@ -45,6 +45,18 @@ var conf = convict({
     doc: 'public key',
     format: String,
     default: 'public.pem',
+  },
+  showReqHeaders: {
+    doc: 'if show request headers',
+    format: Boolean,
+    default: false,
+    env: 'SHOW_REQ_HEADERS'
+  },
+  audit: {
+    doc: 'if audit the response',
+    format: Boolean,
+    default: false,
+    env: 'AUDIT'
   },
 });
 

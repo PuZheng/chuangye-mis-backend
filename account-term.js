@@ -3,7 +3,6 @@ var Router = require('restify-router').Router;
 var loginRequired = require('./login-required');
 var casing = require('casing');
 var knex = require('./knex');
-var logger = require('./logger');
 var R = require('ramda');
 var objDef = require('./models').account_terms;
 
@@ -21,16 +20,16 @@ var getObject = function (id) {
 router.get(
   '/list', loginRequired,
   function (req, res, next) {
-    knex('account_terms')
+    return knex('account_terms')
     .select('*')
     .orderBy('name', 'desc')
     .then(function (list) {
       res.json({ data: casing.camelize(list) });
       next();
     })
-    .catch(function (e) {
-      logger.error(e);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   }
 );
@@ -45,9 +44,9 @@ router.post(
       res.json({id});
       next();
     })
-    .catch(function (e) {
-      logger.error(e);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   }
 );

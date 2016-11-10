@@ -1,6 +1,5 @@
 var restify = require('restify');
 var Router = require('restify-router').Router;
-var logger = require('./logger');
 var loginRequired = require('./login-required');
 var knex = require('./knex');
 var R = require('ramda');
@@ -11,7 +10,7 @@ var co = require('co');
 var router = new  Router();
 
 router.post(
-  '/object', loginRequired, restify.bodyParser(), 
+  '/object', loginRequired, restify.bodyParser(),
   function (req, res, next) {
     co(function *() {
       let department = (yield knex('departments').where('name', req.body.name).select('*'))[0];
@@ -27,9 +26,9 @@ router.post(
       res.send({id});
       next();
     })
-    .catch(function (e) {
-      logger.error(e);
-      next(e);
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
     });
   }
 );
