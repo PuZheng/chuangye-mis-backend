@@ -47,8 +47,15 @@ var hints = function (req, res, next) {
   });
 };
 
-
 router.get('/hints/:kw', loginRequired, hints);
+
+router.get('/object/:id', loginRequired, function (req, res, next) {
+  return getObject(req.params.id)
+  .then(function (obj) {
+    res.json(obj);
+    next();
+  });
+});
 
 
 module.exports = {
