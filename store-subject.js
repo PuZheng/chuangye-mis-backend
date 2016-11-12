@@ -15,8 +15,13 @@ var getObject = function (id) {
 
 var list = function (req, res, next) {
   let q = knex('store_subjects').select('*');
-  q
-  .then(function (list) {
+  let { kw } = req.params;
+  if (kw) {
+    kw = kw.toUpperCase();
+    q.whereRaw('UPPER(name) like ?',  kw + '%')
+    .orWhere(knex.raw('UPPER(acronym) like ?', kw + '%'));
+  }
+  q.then(function (list) {
     res.json({ data: casing.camelize(list) });
     next();
   }).catch(function (err) {
