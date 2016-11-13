@@ -77,9 +77,10 @@ var list = function getList(req, res, next) {
   return co(function *() {
     let q = knex('meters');
     // filters
-    let { kw, type } = req.params;
+    let { kw, type, department } = req.params;
     kw && q.where('name', 'like', kw + '%');
     type && q.where('meter_type_id', type);
+    department && q.where('department_id', department);
 
     let totalCnt = (yield q.clone().count('*'))[0].count;
 
