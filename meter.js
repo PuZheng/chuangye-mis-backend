@@ -73,13 +73,13 @@ var getHints = function getHints(req, res, next) {
 
 router.get('/hints/:kw', loginRequired, getHints);
 
-var getList = function getList(req, res, next) {
+var list = function getList(req, res, next) {
   return co(function *() {
     let q = knex('meters');
     // filters
     let { kw, type } = req.params;
     kw && q.where('name', 'like', kw + '%');
-    type && q.where('type', type);
+    type && q.where('meter_type_id', type);
 
     let totalCnt = (yield q.clone().count('*'))[0].count;
 
@@ -100,7 +100,7 @@ var getList = function getList(req, res, next) {
   });
 };
 
-router.get('/list', loginRequired, restify.queryParser(), getList);
+router.get('/list', loginRequired, restify.queryParser(), list);
 
 var create = function (req, res, next) {
   knex('meters')
