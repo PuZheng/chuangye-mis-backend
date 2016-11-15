@@ -18,7 +18,7 @@ for (var [tableName, def] of R.toPairs(models)) {
 
 schema
 .then(function () {
-  logger.info('completed');
+  logger.info('create schema completed');
   knex.destroy();
 })
 .catch(function (e) {

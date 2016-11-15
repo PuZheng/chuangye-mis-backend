@@ -9,6 +9,8 @@ exports[roles.CASHIER] = new Set([
   'edit.voucher.object',
   'manage.store',
   'edit.charge_bill',
+  'view.invoice.list',
+  'edit.invoice.object',
 ]);
 exports[roles.ADMIN] = new Set([
   'edit.department',

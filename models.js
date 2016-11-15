@@ -11,6 +11,17 @@ exports.users = {
   enabled: t => t.boolean('enabled').defaultTo(true),
 };
 
+exports.voucher_subjects = {
+  id: t => t.increments(),
+  name: t => t.string('name').unique().notNullable(),
+  acronym: t => t.string('acronym'),
+  payer_type: t => t.string('payer_type', R.values(CONST.entityTypes)),
+  recipient_type: t => t.string('recipient_type', R.values(CONST.entityTypes)),
+  notes: t => t.string('notes'),
+  is_public: t => t.boolean('is_public'),
+};
+
+
 exports.invoice_types = {
   id: t => t.increments('id'),
   name: t => t.string('name').unique().notNullable(),
@@ -21,6 +32,8 @@ exports.invoice_types = {
                                 R.values(CONST.storeOrderTypes)),
   store_order_direction: t => t.enum('store_order_direction',
                                     R.values(CONST.storeOrderDirections)),
+  // 相关凭证科目， 用于基于发票去生成凭证
+  related_voucher_subject_id: t => t.integer('related_voucher_subject_id').references('voucher_subjects.id'),
 };
 
 exports.account_terms = {
@@ -63,16 +76,6 @@ exports.store_subjects = {
 exports.voucher_types = {
   id: t => t.increments(),
   name: t => t.string('name').unique().notNullable(),
-};
-
-exports.voucher_subjects = {
-  id: t => t.increments(),
-  name: t => t.string('name').unique().notNullable(),
-  acronym: t => t.string('acronym'),
-  payer_type: t => t.string('payer_type', R.values(CONST.entityTypes)),
-  recipient_type: t => t.string('recipient_type', R.values(CONST.entityTypes)),
-  notes: t => t.string('notes'),
-  is_public: t => t.boolean('is_public'),
 };
 
 exports.vouchers = {

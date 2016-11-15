@@ -31,29 +31,48 @@ var createVoucherTypes = function (trx) {
   }]);
 };
 
+var createVoucherSubjects = function (trx) {
+  return trx.batchInsert('voucher_subjects', [
+    [ '应收货款', 'yshk', entityTypes.CUSTOMER, entityTypes.TENANT, true ],
+    [ '应付货款', 'yfhk', entityTypes.TENANT, entityTypes.SUPPLIER, true ],
+  ].map(function ([name, acronym, payer_type, recipient_type, is_public]) {
+    return {
+      name, acronym, payer_type, recipient_type, is_public
+    };
+  }));
+};
+
 var createInvoiceTypes = function (trx) {
-  let rows = [
-    {
-      name: '进项增值税',
-      vendor_type: entityTypes.SUPPLIER,
-      purchaser_type: entityTypes.TENANT,
-      is_vat: true,
-      store_order_type: storeOrderTypes.MATERIAL,
-      store_order_direction: storeOrderDirections.INBOUND,
-    }, {
-      name: '销项增值税',
-      vendor_type: entityTypes.TENANT,
-      purchaser_type: entityTypes.CUSTOMER,
-      is_vat: true,
-      store_order_type: storeOrderTypes.PRODUCT,
-      store_order_direction: storeOrderDirections.OUTBOUND,
-    }, {
-      name: '普通发票',
-      purchaser_type: entityTypes.OWNER,
-      is_vat: false,
-    }
-  ];
-  return trx.batchInsert('invoice_types', rows);
+  return Promise.all([
+    trx('voucher_subjects').where('name', '应付货款').select('id'),
+    trx('voucher_subjects').where('name', '应收货款').select('id'),
+  ])
+  .then(function ([[{ id: voucher_subject_id1 }], [{ id: voucher_subject_id2 }]]) {
+    let rows = [
+      {
+        name: '进项增值税',
+        vendor_type: entityTypes.SUPPLIER,
+        purchaser_type: entityTypes.TENANT,
+        is_vat: true,
+        store_order_type: storeOrderTypes.MATERIAL,
+        store_order_direction: storeOrderDirections.INBOUND,
+        related_voucher_subject_id: voucher_subject_id1,
+      }, {
+        name: '销项增值税',
+        vendor_type: entityTypes.TENANT,
+        purchaser_type: entityTypes.CUSTOMER,
+        is_vat: true,
+        store_order_type: storeOrderTypes.PRODUCT,
+        store_order_direction: storeOrderDirections.OUTBOUND,
+        related_voucher_subject_id: voucher_subject_id2,
+      }, {
+        name: '普通发票',
+        purchaser_type: entityTypes.OWNER,
+        is_vat: false,
+      }
+    ];
+    return trx.batchInsert('invoice_types', rows);
+  });
 };
 
 var createMeterTypes = function(trx) {
@@ -121,6 +140,7 @@ knex.transaction(function (trx) {
   return co(function *() {
     yield createAdmin(trx);
     yield createVoucherTypes(trx);
+    yield createVoucherSubjects(trx);
     yield createInvoiceTypes(trx);
     yield createMeterTypes(trx);
     yield createSettings(trx);
@@ -128,7 +148,7 @@ knex.transaction(function (trx) {
   });
 })
 .then(function () {
-  logger.info('completed');
+  logger.info('initializing done');
   knex.destroy();
 }, function (e) {
   logger.error(e);

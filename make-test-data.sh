@@ -6,7 +6,6 @@
 ./make-test-data/account-terms.js | bunyan
 ./make-test-data/entities.js | bunyan
 ./make-test-data/store-subjects.js | bunyan
-./make-test-data/voucher-subjects.js | bunyan
 ./make-test-data/departments.js | bunyan
 ./make-test-data/tenants.js | bunyan
 ./make-test-data/invoices.js | bunyan

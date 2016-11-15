@@ -10,7 +10,7 @@ for (var tableName of Object.keys(models).reverse()) {
 
 schema
 .then(function () {
-  logger.info('completed');
+  logger.info('clear schema completed');
   knex.destroy();
 })
 .catch(function (e) {

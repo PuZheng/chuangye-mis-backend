@@ -6,6 +6,9 @@ var loginRequired = require('./login-required');
 var knex = require('./knex');
 var objDef = require('./models').invoice_types;
 var R = require('ramda');
+var layerify = require('./utils/layerify');
+var voucherSubjectDef = require('./models').voucher_subjects;
+
 
 var getObject = function (id) {
   return knex('invoice_types')
@@ -17,7 +20,7 @@ var getObject = function (id) {
 
 router.get(
   '/list', loginRequired, restify.queryParser(),
-  function invoiceTypelistCb(req, res, next) {
+  function listCb(req, res, next) {
     let q = knex('invoice_types');
     let { kw, vendor_type, purchaser_type, only_vat, material_type } = req.params;
     kw && q.where('name', 'like', kw + '%');
@@ -27,11 +30,23 @@ router.get(
     material_type && q.where('material_type', material_type);
 
     q
-    .select('*')
-    .then(function (list) {
-      res.json({ data: casing.camelize(list) });
+    .leftOuterJoin(
+      'voucher_subjects', 'voucher_subjects.id',
+      'invoice_types.related_voucher_subject_id'
+    )
+    .select([
+      ...Object.keys(objDef).map(R.concat('invoice_types.')),
+      ...Object.keys(voucherSubjectDef).map(
+        it => `voucher_subjects.${it} as related_voucher_subject__${it}`
+      )
+    ])
+    .then(R.map(R.pipe(layerify, casing.camelize)))
+    .then(function (data) {
+      res.json({ data, });
       next();
-    }).catch(function (e) {
+    })
+    .catch(function (e) {
+      req.log.error(e);
       next(e);
     });
   }
