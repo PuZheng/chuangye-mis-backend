@@ -2,9 +2,10 @@
 var logger = require('../logger');
 var knex = require('../knex');
 var entityTypes = require('../const').entityTypes;
+var co = require('co');
+var R = require('ramda');
 
 var makeEntities = function () {
-
   var entities = [
     { name: '业主', acronym: 'yz', type: entityTypes.OWNER },
     { name: '客户1', acronym: 'kh1', type: entityTypes.CUSTOMER },
@@ -16,14 +17,42 @@ var makeEntities = function () {
   return knex.batchInsert('entities', entities);
 };
 
+var makeOwner = function makeOwner(trx) {
+  return trx.insert({ name: '业主', acronym: 'yz', type: entityTypes.OWNER })
+  .into('entities');
+};
+
+var makeCustomers = function makeCustomers(trx) {
+  return trx.batchInsert('entities', R.range(1, 3001).map(function (n) {
+    return { name: '客户' + n, acronym: 'kh' + n, type: entityTypes.CUSTOMER };
+  }));
+};
+
+var makeSuppliers = function makeSuppliers(trx) {
+  return trx.batchInsert('entities', R.range(1, 3001).map(function (n) {
+    return {
+      name: '供应商' + n,
+      acronym: 'gys' + n,
+      type: entityTypes.SUPPLIER
+    };
+  }));
+};
+
 module.exports = makeEntities;
 
 if (require.main === module) {
-  makeEntities().then(function () {
-    logger.info('entities completed');
-    knex.destroy();
-  }, function (e) {
-    logger.error(e);
-    knex.destroy();
+  knex.transaction(function (trx) {
+    return co(function *() {
+      try {
+        yield makeOwner(trx);
+        yield makeCustomers(trx);
+        yield makeSuppliers(trx);
+        logger.info('entities completed');
+      } catch (e) {
+        logger.error(e);
+      } finally {
+        knex.destroy();
+      }
+    });
   });
 }
