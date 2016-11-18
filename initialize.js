@@ -47,7 +47,9 @@ var createInvoiceTypes = function (trx) {
     trx('voucher_subjects').where('name', '应付货款').select('id'),
     trx('voucher_subjects').where('name', '应收货款').select('id'),
   ])
-  .then(function ([[{ id: voucher_subject_id1 }], [{ id: voucher_subject_id2 }]]) {
+  .then(function (
+    [[{ id: voucher_subject_id1 }], [{ id: voucher_subject_id2 }]]
+  ) {
     let rows = [
       {
         name: '进项增值税',
@@ -76,7 +78,9 @@ var createInvoiceTypes = function (trx) {
 };
 
 var createMeterTypes = function(trx) {
-  return trx.batchInsert('meter_types', [{ name: '电表' }, { name: '水表' }, { name: '蒸汽表' }]);
+  return trx.batchInsert(
+    'meter_types', [{ name: '电表' }, { name: '水表' }, { name: '蒸汽表' }]
+  );
 };
 
 var createMeterReadings = function *(trx) {
@@ -85,29 +89,34 @@ var createMeterReadings = function *(trx) {
   yield trx.batchInsert('meter_readings', [{
     name: '平电读数',
     meter_type_id,
-    price_setting_id: (yield trx('settings').select('id').where('name', '基本电价'))[0].id,
+    price_setting_id:
+      (yield trx('settings').select('id').where('name', '基本电价'))[0].id,
   }, {
     name: '谷电读数',
     meter_type_id,
-    price_setting_id: (yield trx('settings').select('id').where('name', '低谷电价'))[0].id,
+    price_setting_id:
+      (yield trx('settings').select('id').where('name', '低谷电价'))[0].id,
   }, {
     name: '峰电读数',
     meter_type_id,
-    price_setting_id: (yield trx('settings').select('id').where('name', '高峰电价'))[0].id,
+    price_setting_id:
+      (yield trx('settings').select('id').where('name', '高峰电价'))[0].id,
   }]);
   [{ id: meter_type_id }] = yield trx('meter_types').select('*')
   .where('name', '水表');
   yield trx.insert({
     name: '读数',
     meter_type_id,
-    price_setting_id: (yield trx('settings').select('id').where('name', '工业水价'))[0].id,
+    price_setting_id:
+      (yield trx('settings').select('id').where('name', '工业水价'))[0].id,
   }).into('meter_readings');
   [{ id: meter_type_id }] = yield trx('meter_types').select('*')
   .where('name', '蒸汽表');
   yield trx.insert({
     name: '读数',
     meter_type_id,
-    price_setting_id: (yield trx('settings').select('id').where('name', '蒸汽价'))[0].id,
+    price_setting_id:
+      (yield trx('settings').select('id').where('name', '蒸汽价'))[0].id,
   }).into('meter_readings');
 };
 
@@ -124,7 +133,9 @@ var createSettings = function (trx) {
     { name: '工业水价', value: '3.3', comment: '元/吨', group: settingGroups.水费 },
     { name: '生活水价', value: '6.92', comment: '元/吨', group: settingGroups.水费 },
     { name: '污水治理费', value: '41.0', comment: '元/吨', group: settingGroups.水费 },
-    { name: '治理税可地税部分', value: '41.0', comment: '元/吨', group: settingGroups.水费 },
+    {
+      name: '治理税可地税部分', value: '41.0', comment: '元/吨', group: settingGroups.水费
+    },
     { name: '污泥费', value: '0.71', comment: '元/吨', group: settingGroups.水费 },
     // 蒸汽费用
     { name: '蒸汽价', value: '261.8', comment: '元/吨',  group: settingGroups.蒸汽费 },

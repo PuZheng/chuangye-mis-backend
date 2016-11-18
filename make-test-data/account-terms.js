@@ -5,16 +5,19 @@ var knex = require('../knex');
 
 var makeAccountTerms = function () {
   var accountTerms = [
-    '2016-04',
-    '2016-05',
-    '2016-06',
+    ['2016-04', true],
+    ['2016-05', true],
+    ['2016-06', true],
+    ['2016-07', true],
+    ['2016-08', true],
+    ['2016-09', true],
+    ['2016-10', false],
+    ['2016-11', false],
   ];
 
-  return knex.batchInsert('account_terms', accountTerms.map(function (at) {
-    return {
-      name: at,
-    };
-  }));
+  return knex.batchInsert('account_terms', accountTerms.map(
+    ([name, closed]) => ({ name, closed })
+  ));
 };
 
 module.exports = makeAccountTerms;

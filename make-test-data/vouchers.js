@@ -12,20 +12,35 @@ var chance = new Chance();
 
 co(function *() {
   let voucherTypes = casing.camelize(yield knex('voucher_types').select('*'));
-  let voucherSubjects = casing.camelize(yield knex('voucher_subjects').select('*'));
+  let voucherSubjects = casing.camelize(
+    yield knex('voucher_subjects').select('*')
+  );
   let entites = casing.camelize(yield knex('entities').select('*'));
-  let cashiers = casing.camelize(yield knex('users').where('role', '=', CONST.roles.CASHIER).select('*'));
+  let cashiers = casing.camelize(
+    yield knex('users').where('role', '=', CONST.roles.CASHIER).select('*')
+  );
+  let accountTerms = yield knex('account_terms').select('*');
+
   let rows = R.range(0, 1024).map(function () {
     let voucherType = chance.pickone(voucherTypes);
     let voucherSubject = chance.pickone(voucherSubjects);
-    let payer = chance.pickone(entites.filter(e => e.type == voucherSubject.payerType));
-    let recipient = chance.pickone(entites.filter(e => e.type == voucherSubject.recipientType));
+    let accountTerm = chance.pickone(accountTerms);
+    let [, year, month] = accountTerm.name.match(/(\d{4})-(\d{2})/);
+    let date = moment(
+      chance.date({ year: Number(year), month: Number(month) - 1 })
+    ).format('YYYY-MM-DD');
+    let payer = chance.pickone(
+      entites.filter(e => e.type == voucherSubject.payerType)
+    );
+    let recipient = chance.pickone(
+      entites.filter(e => e.type == voucherSubject.recipientType)
+    );
     return casing.snakeize({
       number: chance.string({ pool: '0123456789', length: 20 }),
       voucherTypeId: voucherType.id,
-      date: moment(chance.date({ year: 2016 })).format('YYYY-MM-DD'),
+      accountTermId: accountTerm.id,
+      date,
       voucherSubjectId: voucherSubject.id,
-      isPublic: chance.bool(),
       notes: chance.sentence({ words: 5 }),
       payerId: payer.id,
       recipientId: recipient.id,

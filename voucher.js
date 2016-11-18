@@ -11,6 +11,7 @@ var getVoucherType = require('./voucher-type').getObject;
 var getVoucherSubject = require('./voucher-subject').getObject;
 var getEntity = require('./entity').getObject;
 var getUser = require('./user').getObject;
+var getAccountTerm = require('./account-term').getObject;
 
 var router = new  Router();
 
@@ -31,27 +32,54 @@ var fullfill = function (obj) {
     obj.payer = yield getEntity(obj.payerId);
     obj.recipient = yield getEntity(obj.recipientId);
     obj.creator = yield getUser(obj.creatorId);
+    obj.accountTerm = yield getAccountTerm(obj.accountTermId);
     return obj;
   });
 };
 
-var newObject = function newObject(req, res, next) {
+var create = function create(req, res, next) {
   let voucher = R.pick(Object.keys(voucherDef), casing.snakeize(req.body));
   voucher.creator_id = req.user.id;
-  knex('vouchers')
-  .insert(voucher)
-  .returning('id')
-  .then(function ([id]) {
-    res.send({ id });
-    next();
-  })
-  .catch(function (err) {
-    res.log.error({ err });
-    next(err);
+  return knex.transaction(function (trx) {
+    return co(function *() {
+      let [, year, month] = voucher.date.match(/(\d{4})-(\d{2})-\d{2}/);
+      let [accountTerm] = yield trx('account_terms')
+      .where('name', year + '-' + month).select('*');
+      if (!accountTerm) {
+        res.json(400, {
+          date: '不存在对应的账期',
+        });
+        return;
+      }
+      if (accountTerm.closed) {
+        res.json(400, {
+          date: '对应的账期已经关闭',
+        });
+        return;
+      }
+      voucher.account_term_id = accountTerm.id;
+
+      let [{ count }] = yield trx('vouchers').where('number', voucher.number)
+      .count();
+      if (Number(count) > 0) {
+        res.json(400, {
+          number: '该凭证号已经存在',
+        });
+        return;
+      }
+      let [obj] = yield trx('vouchers').insert(voucher).returning('*');
+      obj = yield fullfill(casing.camelize(obj));
+      res.send(obj);
+      next();
+    })
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
+    });
   });
 };
 
-router.post('/object', loginRequired, restify.bodyParser(), newObject);
+router.post('/object', loginRequired, restify.bodyParser(), create);
 
 router.get('/object/:id', loginRequired, function (req, res, next) {
   getObject(req.params.id).then(function (o) {
@@ -104,7 +132,6 @@ var fetchList = function (req, res, next) {
     let data = yield q.select('vouchers.*');
     for (var i = 0; i < data.length; ++i) {
       data[i] = yield fullfill(casing.camelize(data[i]));
-      data[i].date = moment(data[i].date).format('YYYY-MM-DD');
     }
     res.json({
       totalCnt,

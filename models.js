@@ -17,8 +17,8 @@ exports.voucher_subjects = {
   acronym: t => t.string('acronym'),
   payer_type: t => t.string('payer_type', R.values(CONST.entityTypes)),
   recipient_type: t => t.string('recipient_type', R.values(CONST.entityTypes)),
-  notes: t => t.string('notes'),
   is_public: t => t.boolean('is_public'),
+  notes: t => t.string('notes'),
 };
 
 
@@ -33,13 +33,15 @@ exports.invoice_types = {
   store_order_direction: t => t.enum('store_order_direction',
                                     R.values(CONST.storeOrderDirections)),
   // 相关凭证科目， 用于基于发票去生成凭证
-  related_voucher_subject_id: t => t.integer('related_voucher_subject_id').references('voucher_subjects.id'),
+  related_voucher_subject_id: t => t.integer('related_voucher_subject_id')
+  .references('voucher_subjects.id'),
 };
 
 exports.account_terms = {
   id: t => t.increments('id'),
   name: t => t.string('name').unique().notNullable(),
-  created: t => t.timestamp('created').defaultTo(knex.fn.now())
+  created: t => t.timestamp('created').defaultTo(knex.fn.now()),
+  closed: t => t.boolean('closed').defaultTo(false),
 };
 
 exports.entities = {
@@ -52,10 +54,12 @@ exports.entities = {
 
 exports.invoices = {
   id: t => t.increments('id'),
-  invoice_type_id: t => t.integer('invoice_type_id').references('invoice_types.id').notNullable(),
+  invoice_type_id: t => t.integer('invoice_type_id')
+  .references('invoice_types.id').notNullable(),
   date: t => t.date('date'),
   number: t => t.string('number').notNullable(),
-  account_term_id: t => t.integer('account_term_id').references('account_terms.id').notNullable(),
+  account_term_id: t => t.integer('account_term_id')
+  .references('account_terms.id').notNullable(),
   is_vat: t => t.boolean('is_vat'),
   vendor_id: t => t.integer('vendor_id').references('entities.id'),
   purchaser_id: t => t.integer('purchaser_id').references('entities.id'),
@@ -80,16 +84,20 @@ exports.voucher_types = {
 
 exports.vouchers = {
   id: t => t.increments(),
-  number: t => t.string('number').notNullable(),
+  number: t => t.string('number').notNullable().unique(),
   amount: t => t.integer('amount').notNullable(),
   date: t => t.date('date'),
-  voucher_type_id: t => t.integer('voucher_type_id').references('voucher_types.id'),
-  voucher_subject_id: t => t.integer('voucher_subject_id').references('voucher_subjects.id'),
-  is_public: t => t.boolean('is_public'),
+  voucher_type_id: t => t.integer('voucher_type_id')
+  .references('voucher_types.id'),
+  voucher_subject_id: t => t.integer('voucher_subject_id')
+  .references('voucher_subjects.id'),
   payer_id: t => t.integer('payer_id').references('entities.id'),
   recipient_id: t => t.integer('recipient_id').references('entities.id'),
   notes: t => t.string('notes'),
   creator_id: t => t.integer('creator_id').references('users.id'),
+  created: t => t.timestamp('created').defaultTo(knex.fn.now()),
+  account_term_id: t => t.integer('account_term_id')
+  .references('account_terms.id').notNullable(),
 };
 
 exports.departments = {
@@ -100,18 +108,21 @@ exports.departments = {
 
 exports.tenants = {
   id: t => t.increments(),
-  entity_id: t => t.integer('entity_id').references('entities.id').notNullable(),
+  entity_id: t => t.integer('entity_id').references('entities.id')
+  .notNullable(),
   contact: t => t.string('contact'),
   department_id: t => t.integer('department_id').references('departments.id')
 };
 
 exports.store_orders = {
   id: t => t.increments(),
-  store_subject_id: t => t.integer('store_subject_id').references('store_subjects.id'),
+  store_subject_id: t => t.integer('store_subject_id')
+  .references('store_subjects.id'),
   quantity: t => t.float('quantity'),
   unit_price: t => t.float('unit_price', 2),
   invoice_id: t => t.integer('invoice_id').references('invoices.id'),
-  direction: t => t.enum('direction', R.values(CONST.storeOrderDirections)).notNullable(),
+  direction: t => t.enum('direction', R.values(CONST.storeOrderDirections))
+  .notNullable(),
   type: t => t.enum('type', R.values(CONST.storeOrderTypes)).notNullable(),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
   tenant_id: t => t.integer('tenant_id').references('tenants.id'),
@@ -151,7 +162,8 @@ exports.meter_readings = {
   name: t => t.string('name').notNullable(),
   meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
   // 相关价格配置项， 用于和读数一起生成计费表单
-  price_setting_id: t => t.integer('price_setting_id').notNullable().references('settings.id'),
+  price_setting_id: t => t.integer('price_setting_id').notNullable()
+  .references('settings.id'),
 };
 
 exports.charge_bills = {
