@@ -197,4 +197,19 @@ var update = function (req, res, next) {
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), update);
 
+var del = function (req, res, next) {
+  let { id }  = req.params;
+  return knex('vouchers').where({ id }).del()
+  .then(function () {
+    res.json({});
+    next();
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
+};
+
+router.del('/object/:id', loginRequired, del);
+
 module.exports = { router, getObject };
