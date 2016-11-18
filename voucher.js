@@ -156,5 +156,45 @@ router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
   });
 });
 
+var update = function (req, res, next) {
+  let { id } = req.params;
+  let voucher = R.pick(R.reject(R.equals('id'), Object.keys(voucherDef)),
+                       casing.snakeize(req.body));
+  return co(function *() {
+    let [{ count }] = yield knex('vouchers').where('number', voucher.number)
+    .andWhereNot({ id }).count();
+    if (Number(count) > 0) {
+      res.json(400, {
+        number: '已经存在该编号',
+      });
+      return;
+    }
+    let [, year, month] = voucher.date.match(/(\d{4})-(\d{2})-\d{2}/);
+    let [accountTerm] = yield knex('account_terms')
+    .where('name', year + '-' + month).select('*');
+    if (!accountTerm) {
+      res.json(400, {
+        date: '账期不存在',
+      });
+      return;
+    }
+    if (accountTerm.closed) {
+      res.json(400, {
+        date: '账期已经关闭',
+      });
+      return;
+    }
+    voucher.account_term_id = accountTerm.id;
+    yield knex('vouchers').update(voucher).where({ id });
+    res.json(yield getObject(id));
+    next();
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
+};
+
+router.put('/object/:id', loginRequired, restify.bodyParser(), update);
 
 module.exports = { router, getObject };
