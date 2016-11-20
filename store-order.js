@@ -19,8 +19,10 @@ var list = function (req, res, next) {
     let q = knex(TABLE_NAME);
 
     // filters
-    for (let col of ['date_span', 'type', 'direction', 'subject_id', 'tenant_id']) {
-      let v = req.params[col];
+    for (
+      let col of ['date_span', 'type', 'direction', 'subject_id', 'tenant_id']
+    ) {
+      let v = req.params[col] || '';
       switch (col) {
       case 'date_span': {
         let m = v.match(/in_(\d+)_days/);
@@ -64,7 +66,8 @@ var list = function (req, res, next) {
     }
 
     let data = yield q
-    .join('store_subjects', 'store_subjects.id', 'store_orders.store_subject_id')
+    .join('store_subjects', 'store_subjects.id',
+          'store_orders.store_subject_id')
     .leftOuterJoin('invoices', 'invoices.id', 'store_orders.invoice_id')
     .leftOuterJoin('tenants', 'tenants.id', 'store_orders.tenant_id')
     .join('entities', 'entities.id', 'tenants.entity_id')
