@@ -88,7 +88,10 @@ var list = function (req, res, next) {
   let q = knex('invoices');
   co(function *() {
     // filters
-    for (var it of [ 'invoice_type_id', 'account_term_id', 'vendor_id', 'purchaser_id', 'amount' ]) {
+    for (
+      let it of ['invoice_type_id', 'account_term_id', 'vendor_id',
+        'purchaser_id', 'amount']
+    ) {
       req.params[it] && q.where(it, req.params[it]);
     }
     let { date_span } = req.params;
@@ -100,7 +103,8 @@ var list = function (req, res, next) {
       }
     }
     let numberLike = req.params.number__like;
-    numberLike && q.whereRaw('UPPER(number) like ?', numberLike.toUpperCase() + '%');
+    numberLike && q.whereRaw('UPPER(number) like ?',
+                             numberLike.toUpperCase() + '%');
     let totalCnt = (yield q.clone().count('*'))[0].count;
 
     // sort by
@@ -109,7 +113,11 @@ var list = function (req, res, next) {
       order = order || 'asc';
       switch (col) {
       case 'account_term': {
-        q.join('account_terms', 'account_terms.id', '=', 'invoices.account_term_id').orderBy('account_terms.id');
+        q
+        .join(
+          'account_terms', 'account_terms.id', '=', 'invoices.account_term_id'
+        )
+        .orderBy('account_terms.id');
         break;
       }
       default: {
@@ -144,7 +152,8 @@ var list = function (req, res, next) {
 router.get('/list', loginRequired, restify.queryParser(), list);
 
 router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
-  knex('invoices').whereRaw('UPPER(number) like ?', req.params.kw.toUpperCase() + '%')
+  knex('invoices')
+  .whereRaw('UPPER(number) like ?', req.params.kw.toUpperCase() + '%')
   .then(function (list) {
     res.json({ data: list.map(it => it.number) });
     next();
@@ -154,6 +163,61 @@ router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
     next(err);
   });
 });
+
+var update = function (req, res, next) {
+  let { id } = req.params;
+  let doUpdate = function (id, data) {
+    return knex('invoices').where({ id })
+    .update(data).then(function () {
+      res.json({});
+      next();
+    });
+  };
+  return knex('invoices').where({ id }).select('authenticated')
+  .then(function ([{ authenticated }]) {
+    if (authenticated) {
+      res.json(400, {
+        reason: '不能修改已经认证过的发票',
+      });
+      next();
+      return;
+    }
+    let data = R.pick(Object.keys(invoiceDef), casing.snakeize(req.body));
+    console.error(data);
+    return doUpdate(id, data);
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
+};
+
+router.put('/object/:id', loginRequired, restify.bodyParser(), update);
+
+var del = function (req, res, next) {
+  let { id } = req.params;
+  return knex('invoices').where({ id }).select('authenticated')
+  .then(function ([{ authenticated }]) {
+    if (authenticated) {
+      res.json(400, {
+        reason: '不能删除已经认证过的发票',
+      });
+      next();
+      return;
+    }
+    return knex('invoices').where({ id }).del()
+    .then(function () {
+      res.json({});
+      next();
+    });
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
+};
+
+router.del('/object/:id', loginRequired, del);
 
 module.exports = {
   router,
