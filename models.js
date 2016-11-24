@@ -67,7 +67,7 @@ exports.invoices = {
   creator_id: t => t.integer('creator_id').references('users.id'),
   amount: t => t.integer('amount').notNullable(), // 金额
   tax_rate: t => t.integer('tax_rate'), // 有可能不牵扯到税额
-  authenticated: t => t.boolean('authenticated').defaultTo(false),
+  status: t => t.string('status').defaultTo(CONST.invoiceStatus.UNAUTHENTICATED)
 };
 
 exports.store_subjects = {

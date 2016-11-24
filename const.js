@@ -43,3 +43,17 @@ router.get('/', loginRequired, function (req, res, next) {
   next();
 });
 exports.router = router;
+
+exports.invoiceStatus = {
+  UNAUTHENTICATED: '未认证',
+  AUTHENTICATED: '已认证',
+  ABORTED: '已作废',
+  DELETED: '已删除',
+};
+
+exports.invoiceActions = {
+  EDIT: '编辑',
+  AUTHENTICATE: '认证',
+  ABORT: '作废',
+  DELETE: '删除'
+};

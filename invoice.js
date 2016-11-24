@@ -14,6 +14,77 @@ var getEntity = require('./entity').getObject;
 var getStoreSubject = require('./store-subject').getObject;
 var getUser = require('./user').getObject;
 var R = require('ramda');
+var StateMachine = require('./lite-sm');
+var invoiceStatus = require('./const').invoiceStatus;
+var invoiceActions = require('./const').invoiceActions;
+
+var sm = new StateMachine();
+
+sm.addState(invoiceStatus.UNAUTHENTICATED, {
+  [invoiceActions.EDIT]: invoiceStatus.UNAUTHENTICATED,
+  [invoiceActions.DELETE]: invoiceStatus.DELETED,
+  [invoiceActions.AUTHENTICATE]: invoiceStatus.AUTHENTICATED,
+}, function (obj) {
+  if (this.action == invoiceActions.EDIT) {
+    return knex.transaction(function (trx) {
+      return co(function *() {
+        let { storeOrders } = obj;
+        let [invoiceType] = yield trx('invoice_types')
+        .where('id', obj.invoiceTypeId)
+        .select('*')
+        .then(casing.camelize);
+        let storeOrderIdToDelete = new Set(
+          (yield trx('store_orders').where('invoice_id', obj.id)
+           .select('id'))
+           .map(R.pipe(R.prop('id'), Number))
+        );
+        for (let so of (storeOrders || [])) {
+          if (!so.id) {
+            so = casing.snakeize(so);
+            so.type = invoiceType.storeOrderType;
+            so.direction = invoiceType.storeOrderDirection;
+            so.invoice_id = obj.id;
+            yield trx.insert(R.pick(Object.keys(storeOrderDef), so))
+            .into('store_orders');
+          } else {
+            storeOrderIdToDelete.delete(Number(so.id));
+          }
+        }
+        for (let soId of storeOrderIdToDelete) {
+          yield trx('store_orders').del().where({ id: soId });
+        }
+        obj = R.pick(Object.keys(invoiceDef), casing.snakeize(obj));
+        yield trx('invoices').update(obj).where({ id: obj.id });
+      });
+    });
+  }
+})
+.addState(invoiceStatus.AUTHENTICATED, {
+  [invoiceActions.ABORT]: invoiceStatus.ABORTED,
+}, function (id) {
+  let actions = this.sm.actions;
+  return knex('invoices').update({ status: this.label }).where({ id })
+  .returning('status')
+  .then(function ([ status ]) {
+    return { status, actions, };
+  });
+})
+.addState(invoiceStatus.ABORTED, null, function (id) {
+  let actions = this.sm.actions;
+  return knex('invoices').update({ status: this.label }).where({ id })
+  .returning('status')
+  .then(function ([ status ]) {
+    return { status, actions, };
+  });
+})
+.addState(invoiceStatus.DELETED, null, function (obj) {
+  return knex.transaction(function (trx) {
+    return co(function *() {
+      yield trx('store_orders').del().where({ invoice_id: obj.id });
+      yield trx('invoices').del().where({ id: obj.id });
+    });
+  });
+});
 
 router.post(
   '/object', loginRequired, restify.bodyParser(),
@@ -31,7 +102,7 @@ router.post(
         .where('id', data.invoice_type_id)
         .select('*')
         .then(casing.camelize);
-        for (var so of (storeOrders || [])) {
+        for (let so of (storeOrders || [])) {
           so = R.pick(Object.keys(storeOrderDef), casing.snakeize(so));
           so.type = invoiceType.storeOrderType;
           so.direction = invoiceType.storeOrderDirection;
@@ -76,6 +147,7 @@ var getObject = function (id) {
 
 router.get('/object/:id', loginRequired, function (req, res, next) {
   getObject(req.params.id).then(function (invoice) {
+    invoice.actions = sm.state(invoice.status).actions;
     res.json(invoice);
     next();
   }).catch(function (err) {
@@ -90,11 +162,11 @@ var list = function (req, res, next) {
     // filters
     for (
       let it of ['invoice_type_id', 'account_term_id', 'vendor_id',
-        'purchaser_id', 'amount']
+        'purchaser_id', 'amount', 'status']
     ) {
       req.params[it] && q.where(it, req.params[it]);
     }
-    let { date_span } = req.params;
+    let { date_span, number__like } = req.params;
     if (date_span) {
       let m = date_span.match(/in_(\d+)_days/);
       if (m) {
@@ -102,9 +174,10 @@ var list = function (req, res, next) {
         q.where('date', '>=', target);
       }
     }
-    let numberLike = req.params.number__like;
-    numberLike && q.whereRaw('UPPER(number) like ?',
-                             numberLike.toUpperCase() + '%');
+    number__like && q.whereRaw(
+      'UPPER(number) like ?', number__like.toUpperCase() + '%'
+    );
+
     let totalCnt = (yield q.clone().count('*'))[0].count;
 
     // sort by
@@ -166,25 +239,19 @@ router.get('/hints/:kw', loginRequired, function getHints(req, res, next) {
 
 var update = function (req, res, next) {
   let { id } = req.params;
-  let doUpdate = function (id, data) {
-    return knex('invoices').where({ id })
-    .update(data).then(function () {
+  return knex('invoices').where({ id }).select('status')
+  .then(function ([{ status }]) {
+    return sm.state(status).perform(invoiceActions.EDIT, req.body)
+    .then(function () {
       res.json({});
       next();
+    })
+    .catch(function (e) {
+      if (e.code === StateMachine.INVALID_ACTION) {
+        res.json(400, e);
+      }
+      throw e;
     });
-  };
-  return knex('invoices').where({ id }).select('authenticated')
-  .then(function ([{ authenticated }]) {
-    if (authenticated) {
-      res.json(400, {
-        reason: '不能修改已经认证过的发票',
-      });
-      next();
-      return;
-    }
-    let data = R.pick(Object.keys(invoiceDef), casing.snakeize(req.body));
-    console.error(data);
-    return doUpdate(id, data);
   })
   .catch(function (err) {
     res.log.error({ err });
@@ -194,22 +261,53 @@ var update = function (req, res, next) {
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), update);
 
+router.post(
+  '/object/:id/:action', loginRequired,
+  function (req, res, next) {
+    let { id, action } = req.params;
+    action = action.toUpperCase();
+    return co(function *() {
+      let [obj] = yield knex('invoices').where({ id }).select('*');
+      sm.state(obj.status);
+      try {
+        return sm.perform(action, obj.id)
+        .then(function (obj) {
+          res.json(obj);
+          next();
+        });
+      } catch (e) {
+        if (e.code == StateMachine.INVALID_ACTION) {
+          res.json(400, e);
+          next();
+          return;
+        }
+      }
+    })
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
+    });
+  }
+);
+
 var del = function (req, res, next) {
   let { id } = req.params;
-  return knex('invoices').where({ id }).select('authenticated')
-  .then(function ([{ authenticated }]) {
-    if (authenticated) {
-      res.json(400, {
-        reason: '不能删除已经认证过的发票',
+  return knex('invoices').where({ id }).select('*')
+  .then(function ([ obj ]) {
+    try {
+      return sm.state(obj.status).perform(invoiceActions.DELETE, obj)
+      .then(function () {
+        res.json({});
+        next();
       });
-      next();
-      return;
+    } catch (e) {
+      if (e.code === StateMachine.INVALID_ACTION) {
+        res.json(400, e);
+        next();
+        return;
+      }
+      throw e;
     }
-    return knex('invoices').where({ id }).del()
-    .then(function () {
-      res.json({});
-      next();
-    });
   })
   .catch(function (err) {
     res.log.error({ err });
