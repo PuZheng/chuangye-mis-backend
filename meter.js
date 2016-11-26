@@ -82,8 +82,7 @@ var list = function getList(req, res, next) {
     type && q.where('meter_type_id', type);
     department && q.where('department_id', department);
 
-    let totalCnt = (yield q.clone().count('*'))[0].count;
-
+    let [{ count: totalCnt }] = yield q.clone().count('*');
     // offset & limit
     let {page, page_size} = req.params;
     if (page && page_size) {

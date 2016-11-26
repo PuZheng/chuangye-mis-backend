@@ -24,4 +24,5 @@ exports[roles.ADMIN] = new Set([
   'edit.voucher_subject',
   'edit.user',
   'edit.store_subject',
+  'edit.partner',
 ]);

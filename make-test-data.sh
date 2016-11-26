@@ -12,3 +12,4 @@
 ./make-test-data/vouchers.js | bunyan
 ./make-test-data/meters.js | bunyan
 ./make-test-data/store-orders.js | bunyan
+./make-test-data/partners.js | bunyan

@@ -6,7 +6,8 @@ var casing = require('casing');
 var co = require('co');
 var R = require('ramda');
 var layerify = require('./utils/layerify');
-var { meter_readings: meterReadingDef, settings: settingsDef } = require('./models');
+var { meter_readings: meterReadingDef, settings: settingsDef }
+= require('./models');
 
 
 var router = new Router();
@@ -144,7 +145,8 @@ var update = function (req, res, next) {
         }
       }
       if (oldMeterReadingIds.size) {
-        yield trx.whereIn('id', Array.from(oldMeterReadingIds)).delete().from('meter_readings');
+        yield trx.whereIn('id', Array.from(oldMeterReadingIds)).delete()
+        .from('meter_readings');
       }
       res.json({});
       next();
@@ -162,13 +164,15 @@ var del = function (req, res, next) {
   let { id } = req.params;
   knex.transaction(function (trx) {
     return co(function *() {
-      let [ meterType ] = yield trx.from('meter_types').where('id', id).select('*');
+      let [ meterType ] = yield trx.from('meter_types').where('id', id)
+      .select('*');
       if (!meterType) {
         res.json(404, {});
         next();
         return;
       }
-      let [ { count: meterCnt } ] = yield trx.from('meters').where('meter_type_id', id).count('*');
+      let [ { count: meterCnt } ] = yield trx.from('meters')
+      .where('meter_type_id', id).count('*');
       if (Number(meterCnt) > 0) {
         res.json(400, {
           reason: '无法删除存在关联表设备的类型',

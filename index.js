@@ -13,9 +13,15 @@ var server = restify.createServer({
 });
 server.opts(/\.*/, function (req, res, next) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Response-Time, X-PINGOTHER, X-CSRF-Token, authorization');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    /* eslint-disable max-len */
+    'Origin, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Response-Time, X-PINGOTHER, X-CSRF-Token, authorization'
+    /* eslint-enable max-len */
+  );
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, PUT, DELETE');
-  res.setHeader('Access-Control-Expose-Headers', 'X-Api-Version, X-Request-Id, X-Response-Time');
+  res.setHeader('Access-Control-Expose-Headers',
+                'X-Api-Version, X-Request-Id, X-Response-Time');
   res.setHeader('Access-Control-Max-Age', '1000');
   res.send(200);
   next();
@@ -25,7 +31,7 @@ let apps = [
   'const', 'auth', 'invoice-type', 'account-term', 'entity', 'invoice',
   'store-subject', 'voucher-type', 'voucher-subject', 'voucher',
   'department', 'tenant', 'settings', 'meter', 'user', 'store-order',
-  'meter-type', 'charge-bill',
+  'meter-type', 'charge-bill', 'partner',
 ];
 for (let app of apps) {
   require('./' + app).router.applyRoutes(server, '/' + app);
@@ -43,7 +49,7 @@ server.pre(function (req, res, next) {
   return next();
 });
 
-server.on('uncaughtException', function uncaughtException(req, res, route, err) {
+server.on('uncaughtException', function (req, res, route, err) {
   logger.error(err);
   res.send(err);
 });

@@ -20,14 +20,41 @@ router.get(
     if (req.params.type) {
       q = q.where('type', req.params.type);
     }
-    q.then(function (list) {
+    q
+    .then(function (list) {
       res.json({ data: casing.camelize(list) });
-      next(); 
-    }).catch(function (e) {
+      next();
+    })
+    .catch(function (e) {
       next(e);
     });
   }
 );
+
+var hints = function hints(req, res, next) {
+  let { kw, type } = req.params;
+  let q = knex('entities');
+  if (type) {
+    q.where('type', type);
+  }
+  kw = kw.toUpperCase();
+  q.whereRaw('UPPER(name) like ?', kw + '%')
+  .orWhereRaw('UPPER(acronym) like ?', kw + '%')
+  .select('*')
+  .then(data => {
+    res.json({ data: data.map(it => ({
+      text: it.name,
+      acronym: it.acronym,
+    })) });
+    next();
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
+};
+
+router.get('/hints/:kw', loginRequired, hints);
 
 module.exports = {
   router,

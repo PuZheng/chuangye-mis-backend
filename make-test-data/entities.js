@@ -4,6 +4,7 @@ var knex = require('../knex');
 var entityTypes = require('../const').entityTypes;
 var co = require('co');
 var R = require('ramda');
+var {sprintf} = require('sprintf-js');
 
 var makeEntities = function () {
   var entities = [
@@ -24,6 +25,7 @@ var makeOwner = function makeOwner(trx) {
 
 var makeCustomers = function makeCustomers(trx) {
   return trx.batchInsert('entities', R.range(1, 3001).map(function (n) {
+    n = sprintf('%04d', n);
     return { name: '客户' + n, acronym: 'kh' + n, type: entityTypes.CUSTOMER };
   }));
 };

@@ -52,6 +52,18 @@ exports.entities = {
   created: t => t.timestamp('created').defaultTo(knex.fn.now())
 };
 
+exports.partners = {
+  id: t => t.increments(),
+  entity_id: t => t.integer('entity_id').references('entities.id')
+  .notNullable(),
+  tax_number: t => t.string('tax_number'),
+  address: t => t.string('address'),
+  bank: t => t.string('bank'), // 开户银行
+  account: t => t.string('account'), // 银行账号
+  contact: t => t.string('contact'), // 联系电话
+  enabled: t => t.boolean('enabled').defaultTo(true),
+};
+
 exports.invoices = {
   id: t => t.increments('id'),
   invoice_type_id: t => t.integer('invoice_type_id')
