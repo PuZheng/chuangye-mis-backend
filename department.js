@@ -13,7 +13,8 @@ router.post(
   '/object', loginRequired, restify.bodyParser(),
   function (req, res, next) {
     co(function *() {
-      let department = (yield knex('departments').where('name', req.body.name).select('*'))[0];
+      let [department] = yield knex('departments').where('name', req.body.name)
+      .select('*');
       if (department) {
         res.json(400, {
           name: '已经存在该车间',

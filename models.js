@@ -196,3 +196,11 @@ exports.payment_records = {
   amount: t => t.timestamp('amount'),
   reason: t => t.string('reason')
 };
+
+exports.accounts = {
+  id: t => t.increments(),
+  entity_id: t => t.integer('entity_id').references('entities.id')
+  .notNullable(),
+  income: t => t.integer('income').notNullable(),
+  expense: t => t.integer('expense').notNullable()
+};

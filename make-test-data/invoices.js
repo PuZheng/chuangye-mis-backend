@@ -13,21 +13,25 @@ var makeInvoices = function () {
     let invoiceTypes = casing.camelize(yield knex('invoice_types').select('*'));
     let entities = casing.camelize(yield knex('entities').select('*'));
     let accountTerms = casing.camelize(yield knex('account_terms').select('*'));
-    let accountants = yield knex('users').select('*').where('role', CONST.roles.ACCOUNTANT);
+    let accountants = yield knex('users').select('*')
+    .where('role', CONST.roles.ACCOUNTANT);
     let rows = R.range(0, 512).map(function () {
       let invoiceType = chance.pickone(invoiceTypes);
       let accountTerm = chance.pickone(accountTerms);
       let [year, month] = accountTerm.name.split('-');
-      let vendor = invoiceType.vendorType? chance.pickone(entities.filter(function (it) {
+      let vendor = invoiceType.vendorType?
+      chance.pickone(entities.filter(function (it) {
         return it.type == invoiceType.vendorType;
       })): {};
-      let purchaser = invoiceType.purchaserType? chance.pickone(entities.filter(function (it) {
+      let purchaser = invoiceType.purchaserType?
+      chance.pickone(entities.filter(function (it) {
         return it.type == invoiceType.purchaserType;
       })): {};
       return {
         invoice_type_id: invoiceType.id,
         date: function () {
-          return year + '-' + (month - 1) + '-' + chance.integer({ min: 1, max: 30 });
+          return year + '-' + (month - 1) + '-' +
+            chance.integer({ min: 1, max: 30 });
         }(),
         number: chance.string({ pool: '0123456789', length: 20 }),
         account_term_id: accountTerm.id,

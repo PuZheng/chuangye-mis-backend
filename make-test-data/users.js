@@ -4,9 +4,9 @@ var roles = require('../const').roles;
 var logger = require('../logger.js');
 var R = require('ramda');
 
-var makeAccounts = function () {
+var makeUsers = function () {
 
-  var accounts = [
+  var users = [
     ['kj1', 'kj1', roles.ACCOUNTANT],
     ['kj2', 'kj2', roles.ACCOUNTANT],
     ['cn1', 'cn1', roles.CASHIER],
@@ -19,12 +19,12 @@ var makeAccounts = function () {
       password: knex.raw('crypt(?, gen_salt(\'md5\'))', [a[1]]),
       role: a[2]
     };
-  })(accounts));
+  })(users));
 };
 
 if (require.main === module) {
-  makeAccounts().then(function () {
-    logger.info('accounts completed');
+  makeUsers().then(function () {
+    logger.info('users completed');
     knex.destroy();
   }, function (e) {
     logger.error(e);
@@ -32,4 +32,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = makeAccounts;
+module.exports = makeUsers;

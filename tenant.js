@@ -82,10 +82,11 @@ var fetchList = function (req, res, next) {
     let kw = req.params.kw;
 
     if (kw) {
+      kw = kw.toUpperCase();
       q
       .join('entities', 'tenants.entity_id', '=', 'entities.id')
-      .where('entities.name', 'like', kw + '%')
-      .orWhere(knex.raw('UPPER(entities.acronym) like ?', kw.toUpperCase() + '%'));
+      .whereRaw('UPPER(entities.name) like ?', kw + '%')
+      .orWhere(knex.raw('UPPER(entities.acronym) like ?', kw + '%'));
     }
 
     let totalCnt = (yield q.clone().count('*'))[0].count;
@@ -112,7 +113,7 @@ var fetchList = function (req, res, next) {
 
 router.get('/list', loginRequired, restify.queryParser(), fetchList);
 
-var newObject = function (req, res, next) {
+var create = function (req, res, next) {
   knex.transaction(function (trx) {
     let {
       entity: {
@@ -149,7 +150,7 @@ var newObject = function (req, res, next) {
       })
       .into('tenants')
       .returning('id');
-      res.json({ id });
+      res.json({ id, entityId: entity_id });
       next();
     });
   })
@@ -159,7 +160,7 @@ var newObject = function (req, res, next) {
   });
 };
 
-router.post('/object', loginRequired, restify.bodyParser(), newObject);
+router.post('/object', loginRequired, restify.bodyParser(), create);
 
 var updateObject = function (req, res, next) {
   co(function *() {

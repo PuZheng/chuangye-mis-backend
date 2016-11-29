@@ -33,13 +33,13 @@ var login = function login(backend) {
     password
   }) {
     return axios.post(backend + '/auth/login', {
-        username,
-        password
-      })
-      .catch(function (error) {
-        throw error;
-      })
-      .then(R.path(['data', 'token']));
+      username,
+      password
+    })
+    .catch(function (error) {
+      throw error;
+    })
+    .then(R.path(['data', 'token']));
   });
 };
 

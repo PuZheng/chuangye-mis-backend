@@ -31,7 +31,7 @@ let apps = [
   'const', 'auth', 'invoice-type', 'account-term', 'entity', 'invoice',
   'store-subject', 'voucher-type', 'voucher-subject', 'voucher',
   'department', 'tenant', 'settings', 'meter', 'user', 'store-order',
-  'meter-type', 'charge-bill', 'partner',
+  'meter-type', 'charge-bill', 'partner', 'account'
 ];
 for (let app of apps) {
   require('./' + app).router.applyRoutes(server, '/' + app);

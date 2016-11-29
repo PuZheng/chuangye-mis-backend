@@ -4,7 +4,8 @@ var logger = require('./logger');
 var roles = require('./const').roles;
 var knex = require('./knex');
 var co = require('co');
-var { entityTypes, storeOrderTypes, storeOrderDirections } = require('./const');
+var { entityTypes, storeOrderTypes, storeOrderDirections, voucherSubjects,
+  voucherTypes } = require('./const');
 var settingGroups = require('./const').settingGroups;
 
 var admin = config.get('admin');
@@ -25,19 +26,25 @@ var createAdmin = function (trx) {
 
 var createVoucherTypes = function (trx) {
   return trx.into('voucher_types').insert([{
-    name: '现金凭证'
+    name: voucherTypes.CASH,
   }, {
-    name: '银行凭证'
+    name: voucherTypes.BANK_VOUCHER,
   }]);
 };
 
 var createVoucherSubjects = function (trx) {
   return trx.batchInsert('voucher_subjects', [
+    [voucherSubjects.PRESET_EXPENSE, 'xtyszc', entityTypes.TENANT, null, true,
+      '用于初始化账户时，预设的当月支出'],
+    [voucherSubjects.PRESET_INCOME, 'xtyszc', null, entityTypes.TENANT, true,
+      '用于初始化账户时，预设的当月收入'],
     [ '应收货款', 'yshk', entityTypes.CUSTOMER, entityTypes.TENANT, true ],
     [ '应付货款', 'yfhk', entityTypes.TENANT, entityTypes.SUPPLIER, true ],
-  ].map(function ([name, acronym, payer_type, recipient_type, is_public]) {
+  ].map(function (
+    [name, acronym, payer_type, recipient_type, is_public, notes]
+  ) {
     return {
-      name, acronym, payer_type, recipient_type, is_public
+      name, acronym, payer_type, recipient_type, is_public, notes
     };
   }));
 };

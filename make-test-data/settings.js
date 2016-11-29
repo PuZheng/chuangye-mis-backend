@@ -16,7 +16,8 @@ var makeSettings = function () {
     { name: '工业水价', value: '3.3', comment: '元/吨', group: settingGroups.水费 },
     { name: '生活水价', value: '6.92', comment: '元/吨', group: settingGroups.水费 },
     { name: '污水治理费', value: '41.0', comment: '元/吨', group: settingGroups.水费 },
-    { name: '治理税可地税部分', value: '41.0', comment: '元/吨', group: settingGroups.水费 },
+    { name: '治理税可地税部分', value: '41.0', comment: '元/吨',
+      group: settingGroups.水费 },
     { name: '污泥费', value: '0.71', comment: '元/吨', group: settingGroups.水费 },
     // 蒸汽费用
     { name: '蒸汽价', value: '261.8', comment: '元/吨',  group: settingGroups.蒸汽费 },

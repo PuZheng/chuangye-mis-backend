@@ -28,18 +28,21 @@ var makeMeters = function *(trx, type) {
                           })
                           .select('id'))
                           .map(R.prop('id'));
-  let departmentIdList = (yield trx('departments').select('id')).map(R.prop('id'));
-  yield trx.batchInsert('meters', departmentIdList.map(function (department_id, idx) {
-    return {
-      name: '设备' + idx,
-      is_total: false,
-      department_id,
-      times: 40,
-      status: meterStatus.NORMAL,
-      parent_meter_id: C.pickone(totalMeterIdList),
-      meter_type_id
-    };
-  }));
+  let departmentIdList = (yield trx('departments').select('id'))
+  .map(R.prop('id'));
+  yield trx.batchInsert(
+    'meters', departmentIdList.map(function (department_id, idx) {
+      return {
+        name: '设备' + idx,
+        is_total: false,
+        department_id,
+        times: 40,
+        status: meterStatus.NORMAL,
+        parent_meter_id: C.pickone(totalMeterIdList),
+        meter_type_id
+      };
+    })
+  );
 };
 
 if (require.main === module) {

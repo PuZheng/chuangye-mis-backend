@@ -10,9 +10,8 @@ var makeAccountTerms = function () {
     ['2016-06', true],
     ['2016-07', true],
     ['2016-08', true],
-    ['2016-09', true],
+    ['2016-09', false],
     ['2016-10', false],
-    ['2016-11', false],
   ];
 
   return knex.batchInsert('account_terms', accountTerms.map(

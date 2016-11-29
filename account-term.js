@@ -5,6 +5,9 @@ var casing = require('casing');
 var knex = require('./knex');
 var R = require('ramda');
 var objDef = require('./models').account_terms;
+var co = require('co');
+var { invoiceActions } = require('./const');
+var { sm } = require('./invoice');
 
 var router = new Router();
 
@@ -47,6 +50,36 @@ router.post(
     .catch(function (err) {
       res.log.error({ err });
       next(err);
+    });
+  }
+);
+
+router.post(
+  '/object/:id/:action', loginRequired,
+  function (req, res, next) {
+    let { id, action } = req.params;
+    action = action.toUpperCase();
+    knex.transaction(function (trx) {
+      return co(function *() {
+        if (action === 'CLOSE') {
+          let invoices = yield trx('invoices').where({ account_term_id: id })
+          .select('*');
+          for (let invoice of invoices) {
+            if (~sm.state(invoice.status).actions
+                .indexOf(invoiceActions.AUTHENTICATE)) {
+              yield sm.perform(invoiceActions.AUTHENTICATE, invoice.id);
+            }
+          }
+          yield trx('account_terms').update({ closed: true })
+          .where({ id });
+        }
+        res.json({});
+        next();
+      })
+      .catch(function (err) {
+        res.log.error({ err });
+        next(err);
+      });
     });
   }
 );

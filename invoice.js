@@ -320,4 +320,5 @@ router.del('/object/:id', loginRequired, del);
 module.exports = {
   router,
   getObject,
+  sm
 };

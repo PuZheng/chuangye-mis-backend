@@ -26,18 +26,24 @@ var makeStoreOrders = function () {
       let type = C.pickone(R.values(storeOrderTypes));
       let quantity = C.integer({ min: 1, max: 1000 });
       let unit_price;
-      if ((direction == storeOrderDirections.INBOUND && type == storeOrderTypes.MATERIAL) ||
-         (direction === storeOrderDirections.OUTBOUND && type == storeOrderTypes.PRODUCT)) {
+      if (
+        (direction == storeOrderDirections.INBOUND &&
+         type == storeOrderTypes.MATERIAL) ||
+        (direction === storeOrderDirections.OUTBOUND &&
+         type == storeOrderTypes.PRODUCT)
+      ) {
         unit_price = C.integer({ min: 1, max: 1000 });
 
       }
       let invoice;
-      if (direction == storeOrderDirections.INBOUND && type == storeOrderTypes.MATERIAL) {
+      if (direction == storeOrderDirections.INBOUND &&
+          type == storeOrderTypes.MATERIAL) {
         invoice = C.pick(invoices.filter(function (it) {
           return it.invoiceType.name == '进项增值税';
         }));
       }
-      if (direction === storeOrderDirections.OUTBOUND && type == storeOrderTypes.PRODUCT) {
+      if (direction === storeOrderDirections.OUTBOUND &&
+          type == storeOrderTypes.PRODUCT) {
         invoice = C.pick(invoices.filter(function (it) {
           return it.invoiceType.name == '销项增值税';
         }));
@@ -59,7 +65,8 @@ var makeStoreOrders = function () {
       if (invoice.invoiceType === '普通发票') {
         continue;
       }
-      let sos = yield knex('store_orders').where('invoice_id', invoice.id).select('*');
+      let sos = yield knex('store_orders').where('invoice_id', invoice.id)
+      .select('*');
       let amount = R.sum(sos.map(function ({ quantity, unit_price }) {
         return quantity * unit_price;
       }));

@@ -4,16 +4,13 @@ var jwt = require('jsonwebtoken');
 var privateKey;
 
 module.exports = function sign(obj) {
-  let p;
-  if (privateKey) {
-    p = Promise.resolve(privateKey);
-  } else {
-    p = fs.readFile(config.get('privateKey')).then(function (pk) {
+  return Promise.resolve(
+    privateKey || fs.readFile(config.get('privateKey'))
+    .then(function (pk) {
       privateKey = pk;
       return pk;
-    });
-  }
-  return p.then(key => jwt.sign(obj, privateKey, {
-      algorithm: 'RS256'
-    }));
+    })
+  ).then(key => jwt.sign(obj, key, {
+    algorithm: 'RS256'
+  }));
 };

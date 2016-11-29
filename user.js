@@ -20,13 +20,16 @@ var getObject = function (id) {
   });
 };
 
-router.get('/object/:id', loginRequired, permissionRequired('edit.user'), function(req, res, next) {
-  return getObject(req.params.id)
-  .then(function (obj) {
-    res.json(obj);
-    next();
-  });
-});
+router.get(
+  '/object/:id', loginRequired, permissionRequired('edit.user'),
+  function(req, res, next) {
+    return getObject(req.params.id)
+    .then(function (obj) {
+      res.json(obj);
+      next();
+    });
+  }
+);
 
 var listCb = function (req, res, next) {
   knex('users')
@@ -89,7 +92,8 @@ var updateCb = function (req, res, next) {
   });
 };
 
-router.put('/object/:id', loginRequired, permissionRequired('edit.user'), restify.bodyParser(), updateCb);
+router.put('/object/:id', loginRequired, permissionRequired('edit.user'),
+           restify.bodyParser(), updateCb);
 
 var create = function (req, res, next) {
   let data = R.pick(Object.keys(objDef), casing.snakeize(req.body));
@@ -122,6 +126,7 @@ var create = function (req, res, next) {
   });
 };
 
-router.post('/object', loginRequired, permissionRequired('edit.user'), restify.bodyParser(), create);
+router.post('/object', loginRequired, permissionRequired('edit.user'),
+            restify.bodyParser(), create);
 
 module.exports = { getObject, router };

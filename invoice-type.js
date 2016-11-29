@@ -22,7 +22,8 @@ router.get(
   '/list', loginRequired, restify.queryParser(),
   function listCb(req, res, next) {
     let q = knex('invoice_types');
-    let { kw, vendor_type, purchaser_type, only_vat, material_type } = req.params;
+    let { kw, vendor_type, purchaser_type, only_vat, material_type } =
+      req.params;
     kw && q.where('name', 'like', kw + '%');
     vendor_type && q.where('vendor_type', vendor_type);
     purchaser_type && q.where('purchaser_type', purchaser_type);

@@ -2,7 +2,7 @@
 ./clear-schema.js | bunyan
 ./create-schema.js | bunyan
 ./initialize.js | bunyan
-./make-test-data/accounts.js | bunyan
+./make-test-data/users.js | bunyan
 ./make-test-data/account-terms.js | bunyan
 ./make-test-data/entities.js | bunyan
 ./make-test-data/store-subjects.js | bunyan

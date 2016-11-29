@@ -23,7 +23,9 @@ var fetchList = function (req, res, next) {
   let { kw, payer_type, recipient_type, only_public } = req.params;
 
   if (kw) {
-    q.where('name', 'like', kw + '%').orWhereRaw('UPPER(acronym) like ?', kw.toUpperCase() + '%');
+    kw = kw.toUpperCase();
+    q.whereRaw('UPPER(name) like ?', kw + '%')
+    .orWhereRaw('UPPER(acronym) like ?', kw + '%');
   }
   payer_type && q.where({ payer_type });
   recipient_type && q.where({ recipient_type });

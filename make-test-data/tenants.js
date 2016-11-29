@@ -44,13 +44,15 @@ var makeTenants = function () {
       }
     );
     let entitieIds = yield knex.batchInsert('entities', rows).returning('id');
-    yield knex.batchInsert('tenants', R.zipWith(function (department, entitiyId) {
-      return {
-        department_id: department.id,
-        entity_id: entitiyId,
-        contact: '1' + chance.string({ pool: '1234567890', length: '10' }),
-      };
-    }, departments, entitieIds));
+    yield knex.batchInsert(
+      'tenants', R.zipWith(function (department, entitiyId) {
+        return {
+          department_id: department.id,
+          entity_id: entitiyId,
+          contact: '1' + chance.string({ pool: '1234567890', length: '10' }),
+        };
+      }, departments, entitieIds)
+    );
   });
 };
 

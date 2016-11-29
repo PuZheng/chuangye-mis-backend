@@ -57,3 +57,15 @@ exports.invoiceActions = {
   ABORT: '作废',
   DELETE: '删除'
 };
+
+// 内建的凭证科目
+exports.voucherSubjects = {
+  PRESET_INCOME: '系统预设收入',
+  PRESET_EXPENSE: '系统预设支出',
+};
+
+// 内建的凭证类型
+exports.voucherTypes = {
+  CASH: '现金凭证',
+  BANK_VOUCHER: '银行凭证'
+};

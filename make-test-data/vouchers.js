@@ -13,7 +13,8 @@ var chance = new Chance();
 co(function *() {
   let voucherTypes = casing.camelize(yield knex('voucher_types').select('*'));
   let voucherSubjects = casing.camelize(
-    yield knex('voucher_subjects').select('*')
+    yield knex('voucher_subjects').whereIn('name', ['应收货款', '应付货款'])
+    .select('*')
   );
   let entites = casing.camelize(yield knex('entities').select('*'));
   let cashiers = casing.camelize(
