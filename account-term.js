@@ -4,14 +4,21 @@ var loginRequired = require('./login-required');
 var casing = require('casing');
 var knex = require('./knex');
 var R = require('ramda');
-var objDef = require('./models').account_terms;
+var {
+  account_terms: objDef,
+  vouchers: voucherDef,
+  voucher_subjects: voucherSubjectDef,
+  voucher_types: voucherTypeDef
+} = require('./models');
 var co = require('co');
-var { invoiceActions } = require('./const');
+var { invoiceActions, entityTypes } = require('./const');
 var { sm } = require('./invoice');
+var layerify = require('./utils/layerify');
+var moment = require('moment');
 
 var router = new Router();
 
-var getObject = function (id) {
+var getObject = function getObject(id) {
   return knex('account_terms')
   .select('*')
   .where('id', id)
@@ -54,6 +61,88 @@ router.post(
   }
 );
 
+var makeAccountBook = function ({ vouchers, account, entityId }) {
+  let header = {
+    readonly: true,
+    style: {
+      background: 'teal',
+      color: 'yellow',
+      fontWeight: 'bold',
+    }
+  };
+  let row0 = [
+    Object.assign({
+      val: '截至上月累计收入(元)'
+    }, header),
+    account.income,
+    Object.assign({
+      val: '截至上月累计支出(元)',
+    }, header),
+    account.expense,
+    Object.assign({
+      val: '上月结存',
+    }, header),
+    account.income - account.expense,
+  ];
+  let row1 = [
+    '日期', '凭证号', '科目', '类型', '备注', '收入方', '支付方', '收入(元)', '支出(元)',
+  ].map(function (it) {
+    return Object.assign({
+      val: it,
+    }, header);
+  });
+  let thisMonthExpense = 0;
+  let thisMonthIncome = 0;
+  let voucherRows = [];
+  vouchers.forEach(function (it) {
+    let income = it.recipientId == entityId? it.amount: 0;
+    let expense = it.payerId == entityId? it.amount: 0;
+    thisMonthIncome += income;
+    thisMonthExpense += expense;
+    voucherRows.push([
+      moment(it.date).format('YYYY-MM'), it.number, it.voucherSubject.name,
+      it.voucherType.name, it.notes,
+      it.recipient.name, it.payer.name,
+      income, expense
+    ]);
+  });
+  let summaryRow = [
+    '总计', void 0, void 0, void 0, void 0, void 0, void 0,
+    thisMonthIncome, thisMonthExpense
+  ].map(function (it) {
+    return Object.assign({
+      val: it
+    }, header);
+  });
+  let lastRow = [
+    Object.assign({
+      val: '本月底累计收入(元)',
+    }, header),
+    account.income + thisMonthIncome,
+    Object.assign({
+      val: '本月底累计支出(元)',
+    }, header),
+    account.expense + thisMonthExpense,
+    Object.assign({
+      val: '本月结存(元)',
+    }, header),
+    account.income + thisMonthIncome - (account.expense + thisMonthExpense)
+  ];
+  return {
+    sheets: [
+      {
+        grids: [
+          row0,
+          row1,
+          ...voucherRows,
+          summaryRow,
+          lastRow
+        ]
+      }
+    ]
+  };
+};
+
 router.post(
   '/object/:id/:action', loginRequired,
   function (req, res, next) {
@@ -69,6 +158,61 @@ router.post(
                 .indexOf(invoiceActions.AUTHENTICATE)) {
               yield sm.perform(invoiceActions.AUTHENTICATE, invoice.id);
             }
+          }
+          let entities = yield trx('entities')
+          .where({ type: entityTypes.TENANT }).select('*');
+          // 为每个承包人生成账簿, 并更新累计收入/支出
+          for (let entity of entities) {
+            let [account] = yield knex('accounts').where('entity_id', entity.id)
+            .select('*').then(casing.camelize);
+            if (!account) {
+              res.json(400, {
+                reason: `承包人${entity.name}账户尚未初始化`,
+              });
+              next();
+              return;
+            }
+            let vouchers = yield knex.where('vouchers.account_term_id', id)
+            .where(function () {
+              this.where('vouchers.payer_id', entity.id)
+              .orWhere('vouchers.recipient_id', entity.id);
+            })
+            .join('voucher_subjects', 'vouchers.voucher_subject_id',
+                  'voucher_subjects.id')
+            .join('voucher_types', 'vouchers.voucher_type_id',
+                  'voucher_types.id')
+            .join('entities as payers', 'payers.id', 'vouchers.payer_id')
+            .join('entities as recipients', 'recipients.id',
+                  'vouchers.recipient_id')
+            .orderBy('vouchers.date', 'desc').select([
+              ...Object.keys(voucherDef).map(it => 'vouchers.' + it),
+              ...Object.keys(voucherSubjectDef)
+              .map(it => `voucher_subjects.${it} as voucher_subject__${it}`),
+              ...Object.keys(voucherTypeDef)
+              .map(it => `voucher_types.${it} as voucher_type__${it}`),
+              'payers.name as payer__name', 'recipients.name as recipient__name'
+            ])
+            .from('vouchers')
+            .then(R.map(R.pipe(layerify, casing.camelize)));
+            yield trx('account_books').insert({
+              account_term_id: id,
+              entity_id: entity.id,
+              def: JSON.stringify(makeAccountBook(
+                { account: account, vouchers, entityId: entity.id }
+              ))
+            });
+            let thisMonthExpense = 0;
+            let thisMonthIncome = 0;
+            for (let voucher of vouchers) {
+              if (voucher.payerId == entity.id) {
+                thisMonthExpense += voucher.amount;
+              } else if (voucher.recipientId == entity.id) {
+                thisMonthIncome += voucher.amount;
+              }
+            }
+            yield trx('accounts').where('entity_id', entity.id)
+            .increment('income', thisMonthIncome)
+            .increment('expense', thisMonthExpense);
           }
           yield trx('account_terms').update({ closed: true })
           .where({ id });

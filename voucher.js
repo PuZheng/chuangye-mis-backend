@@ -97,7 +97,8 @@ var fetchList = function (req, res, next) {
     let q = knex('vouchers');
     // filters
     for (var col of [
-      'voucher_type_id', 'voucher_subject_id', 'payer_id', 'recipient_id'
+      'voucher_type_id', 'voucher_subject_id', 'payer_id', 'recipient_id',
+      'account_term_id',
     ]) {
       let v = req.params[col];
       if (v) {

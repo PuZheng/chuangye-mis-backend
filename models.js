@@ -179,11 +179,22 @@ exports.meter_readings = {
   .references('settings.id'),
 };
 
+// 费用清单
 exports.charge_bills = {
   id: t => t.increments(),
   account_term_id: t => t.integer('account_term_id')
   .references('account_terms.id').notNullable().unique(),
   def: t => t.jsonb('def'),
+};
+
+// 收支清单
+exports.account_books = {
+  id: t => t.increments(),
+  account_term_id: t => t.integer('account_term_id')
+  .references('account_terms.id').notNullable(),
+  entity_id: t => t.integer('entity_id').references('entities.id'),
+  def: t => t.jsonb('def'),
+  '': t => t.unique(['account_term_id', 'entity_id']),
 };
 
 exports.payment_records = {

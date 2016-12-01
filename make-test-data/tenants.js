@@ -43,7 +43,7 @@ var makeTenants = function () {
         };
       }
     );
-    let entitieIds = yield knex.batchInsert('entities', rows).returning('id');
+    let entityIds = yield knex.batchInsert('entities', rows).returning('id');
     yield knex.batchInsert(
       'tenants', R.zipWith(function (department, entitiyId) {
         return {
@@ -51,7 +51,17 @@ var makeTenants = function () {
           entity_id: entitiyId,
           contact: '1' + chance.string({ pool: '1234567890', length: '10' }),
         };
-      }, departments, entitieIds)
+      }, departments, entityIds)
+    );
+    yield knex.batchInsert(
+      'accounts', entityIds.map(function (entityId) {
+        let income = chance.integer({ min: 10000, max: 100000 });
+        return {
+          entity_id: entityId,
+          income,
+          expense: income - chance.integer({ min: -1000, max: income }),
+        };
+      })
     );
   });
 };

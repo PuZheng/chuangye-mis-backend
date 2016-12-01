@@ -8,7 +8,6 @@ var knex = require('./knex');
 var invoiceDef = require('./models').invoices;
 var storeOrderDef = require('./models').store_orders;
 var moment = require('moment');
-var getAccountTerm = require('./account-term').getObject;
 var getInvoiceType = require('./invoice-type').getObject;
 var getEntity = require('./entity').getObject;
 var getStoreSubject = require('./store-subject').getObject;
@@ -121,6 +120,7 @@ router.post(
 );
 
 var fullfill = function (obj) {
+  var getAccountTerm = require('./account-term').getObject;
   return co(function *() {
     obj.invoiceType = yield getInvoiceType(obj.invoiceTypeId);
     obj.accountTerm = yield getAccountTerm(obj.accountTermId);
