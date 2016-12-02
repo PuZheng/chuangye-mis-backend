@@ -22,15 +22,11 @@ var getObject = function (id) {
 };
 
 var fullfill = function (obj) {
-  return getEntity(obj.entityId)
-  .then(function (entity) {
-    obj.entity = entity;
-  })
-  .then(function () {
-    return getDepartment(obj.departmentId);
-  })
-  .then(function (department) {
-    obj.department = department;
+  return co(function *() {
+    obj.entity = yield getEntity(obj.entityId);
+    obj.department = yield getDepartment(obj.departmentId);
+    [obj.account] = yield knex('accounts').where({ entity_id: obj.entityId })
+    .select('*').then(casing.camelize);
     return obj;
   });
 };
@@ -79,7 +75,7 @@ router.get('/hints/:kw', loginRequired, function(req, res, next) {
 var fetchList = function (req, res, next) {
   co(function *() {
     let q = knex('tenants');
-    let kw = req.params.kw;
+    let { kw, only_account_uninitialized } = req.params;
 
     if (kw) {
       kw = kw.toUpperCase();
@@ -87,6 +83,14 @@ var fetchList = function (req, res, next) {
       .join('entities', 'tenants.entity_id', '=', 'entities.id')
       .whereRaw('UPPER(entities.name) like ?', kw + '%')
       .orWhere(knex.raw('UPPER(entities.acronym) like ?', kw + '%'));
+    }
+
+    if (only_account_uninitialized == '1') {
+      q
+      .whereNotExists(
+        knex.select('id').from('accounts')
+        .whereRaw('tenants.entity_id = accounts.entity_id')
+      );
     }
 
     let totalCnt = (yield q.clone().count('*'))[0].count;
