@@ -6,7 +6,7 @@ var casing = require('casing');
 var co = require('co');
 var R = require('ramda');
 var layerify = require('./utils/layerify');
-var { meter_readings: meterReadingDef, settings: settingsDef }
+var { meter_reading_types: meterReadingTypeDef, settings: settingsDef }
 = require('./models');
 
 
@@ -16,13 +16,13 @@ var list = function (req, res, next) {
   return co(function *() {
     let data = yield knex('meter_types').select('*').then(casing.camelize);
     for (let it of data) {
-      it.meterReadings = yield knex
-      .join('settings', 'meter_readings.price_setting_id', 'settings.id')
-      .from('meter_readings')
-      .where('meter_readings.meter_type_id', it.id)
+      it.meterReadingTypes = yield knex
+      .join('settings', 'meter_reading_types.price_setting_id', 'settings.id')
+      .from('meter_reading_types')
+      .where('meter_reading_types.meter_type_id', it.id)
       .select([
-        ...Object.keys(meterReadingDef)
-        .map(col => 'meter_readings.' + col),
+        ...Object.keys(meterReadingTypeDef)
+        .map(col => 'meter_reading_types.' + col),
         ...Object.keys(settingsDef)
         .map(col => 'settings.' + col + ' as price_setting__' + col),
       ])
@@ -39,7 +39,7 @@ router.get('/list', loginRequired, list);
 var create = function (req, res, next) {
   knex.transaction(function (trx) {
     return co(function *() {
-      let { name, meterReadings } = req.body;
+      let { name, meterReadingTypes } = req.body;
       let [meterType] = yield trx.select('*')
       .where('name', name)
       .from('meter_types');
@@ -54,13 +54,13 @@ var create = function (req, res, next) {
       let [meterTypeId] = yield trx.insert({ name })
       .returning('id')
       .into('meter_types');
-      for (let mr of (meterReadings || [])) {
+      for (let mrt of (meterReadingTypes || [])) {
         yield trx.insert({
-          name: mr.name,
+          name: mrt.name,
           meter_type_id: meterTypeId,
-          price_setting_id: mr.priceSettingId,
+          price_setting_id: mrt.priceSettingId,
         })
-        .into('meter_readings');
+        .into('meter_reading_types');
       }
       res.send({ id: meterTypeId });
       next();
@@ -70,7 +70,6 @@ var create = function (req, res, next) {
       next(err);
     });
   });
-
 };
 
 router.post('/object', loginRequired, restify.bodyParser(), create);
@@ -81,12 +80,12 @@ var object = function (req, res, next) {
     let [obj] = yield knex('meter_types')
     .where('id', id)
     .then(casing.camelize);
-    obj.meterReadings = yield knex('meter_readings')
-    .join('settings', 'settings.id', 'meter_readings.price_setting_id')
+    obj.meterReadingTypes = yield knex('meter_reading_types')
+    .join('settings', 'settings.id', 'meter_reading_types.price_setting_id')
     .where('meter_type_id', obj.id)
     .select([
-      ...Object.keys(meterReadingDef)
-      .map(it => 'meter_readings.' + it),
+      ...Object.keys(meterReadingTypeDef)
+      .map(it => 'meter_reading_types.' + it),
       ...Object.keys(settingsDef)
       .map(it => 'settings.' + it + ' as price_setting__' + it),
     ])
@@ -103,12 +102,12 @@ var getObject = function (id) {
     let [obj] = yield knex('meter_types')
     .where('id', id)
     .then(casing.camelize);
-    obj.meterReadings = yield knex('meter_readings')
-    .join('settings', 'settings.id', 'meter_readings.price_setting_id')
+    obj.meterReadingTypes = yield knex('meter_reading_types')
+    .join('settings', 'settings.id', 'meter_reading_types.price_setting_id')
     .where('meter_type_id', obj.id)
     .select([
-      ...Object.keys(meterReadingDef)
-      .map(it => 'meter_readings.' + it),
+      ...Object.keys(meterReadingTypeDef)
+      .map(it => 'meter_reading_types.' + it),
       ...Object.keys(settingsDef)
       .map(it => 'settings.' + it + ' as price_setting__' + it),
     ])
@@ -124,29 +123,29 @@ var update = function (req, res, next) {
   let { id }  = req.params;
   knex.transaction(function (trx) {
     return co(function *() {
-      let { name, meterReadings=[] } = req.body;
+      let { name, meterReadingTypes=[] } = req.body;
       yield trx('meter_types')
       .update({ name })
       .where({id});
-      let oldMeterReadingIds = new Set(yield trx.select('id')
-                                       .where('meter_type_id', id)
-                                       .from('meter_readings')
-                                       .then(R.map(R.prop('id'))));
-      for (let mr of meterReadings) {
-        if (!mr.id) {
+      let oldMeterReadingTypeIds = new Set(yield trx.select('id')
+                                           .where('meter_type_id', id)
+                                           .from('meter_reading_types')
+                                           .then(R.map(R.prop('id'))));
+      for (let mrt of meterReadingTypes) {
+        if (!mrt.id) {
           yield trx.insert({
-            name: mr.name,
+            name: mrt.name,
             meter_type_id: id,
-            price_setting_id: mr.priceSettingId,
+            price_setting_id: mrt.priceSettingId,
           })
-          .into('meter_readings');
+          .into('meter_reading_types');
         } else {
-          oldMeterReadingIds.delete(mr.id);
+          oldMeterReadingTypeIds.delete(mrt.id);
         }
       }
-      if (oldMeterReadingIds.size) {
-        yield trx.whereIn('id', Array.from(oldMeterReadingIds)).delete()
-        .from('meter_readings');
+      if (oldMeterReadingTypeIds.size) {
+        yield trx.whereIn('id', Array.from(oldMeterReadingTypeIds)).delete()
+        .from('meter_reading_types');
       }
       res.json({});
       next();
@@ -180,7 +179,7 @@ var del = function (req, res, next) {
         next();
         return;
       }
-      yield trx.where('meter_type_id', id).del().from('meter_readings');
+      yield trx.where('meter_type_id', id).del().from('meter_reading_types');
       yield trx.where('id', id).del().from('meter_types');
       res.json({});
       next();

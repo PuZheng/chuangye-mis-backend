@@ -11,11 +11,11 @@ exports[roles.CASHIER] = new Set([
   'edit.charge_bill',
   'view.invoice.list',
   'edit.invoice.object',
+  'view.tenant.list',
+  'edit.tenant.object',
 ]);
 exports[roles.ADMIN] = new Set([
   'edit.department',
-  'view.tenant.list',
-  'edit.tenant.object',
   'edit.settings',
   'edit.meter',
   'edit.meter_type',
@@ -25,4 +25,5 @@ exports[roles.ADMIN] = new Set([
   'edit.user',
   'edit.store_subject',
   'edit.partner',
+  'edit.meter_reading',
 ]);

@@ -169,8 +169,8 @@ exports.meters = {
   meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
 };
 
-// 不同种类的设备可能有多个计数
-exports.meter_readings = {
+// 不同种类的设备可能有多个计数种类。例如电表有"高峰读数"，"峰谷读数"，"一般读数"
+exports.meter_reading_types = {
   id: t => t.increments(),
   name: t => t.string('name').notNullable(),
   meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
@@ -179,11 +179,30 @@ exports.meter_readings = {
   .references('settings.id'),
 };
 
+exports.meter_readings = {
+  id: t => t.increments(),
+  value: t => t.float('value').notNullable(),
+  meter_id: t => t.integer('meter_id').references('meters.id').notNullable(),
+  meter_reading_type_id: t => t.integer('meter_reading_type_id')
+  .references('meter_reading_types.id').notNullable(),
+  '': t => t.unique(['meter_id', 'meter_reading_type_id']),
+};
+
+
 // 费用清单
 exports.charge_bills = {
   id: t => t.increments(),
   account_term_id: t => t.integer('account_term_id')
   .references('account_terms.id').notNullable().unique(),
+  def: t => t.jsonb('def'),
+};
+
+// 承包人费用清单
+exports.tenant_charge_bills = {
+  id: t => t.increments(),
+  account_term_id: t => t.integer('account_term_id')
+  .references('account_terms.id').notNullable().unique(),
+  tenant_id: t => t.integer('tenant_id').references('tenants.id'),
   def: t => t.jsonb('def'),
 };
 

@@ -90,10 +90,10 @@ var createMeterTypes = function(trx) {
   );
 };
 
-var createMeterReadings = function *(trx) {
+var createMeterReadingTypes = function *(trx) {
   let [{ id: meter_type_id }] = yield trx('meter_types').select('*')
   .where('name', '电表');
-  yield trx.batchInsert('meter_readings', [{
+  yield trx.batchInsert('meter_reading_types', [{
     name: '平电读数',
     meter_type_id,
     price_setting_id:
@@ -116,7 +116,7 @@ var createMeterReadings = function *(trx) {
     meter_type_id,
     price_setting_id:
       (yield trx('settings').select('id').where('name', '工业水价'))[0].id,
-  }).into('meter_readings');
+  }).into('meter_reading_types');
   [{ id: meter_type_id }] = yield trx('meter_types').select('*')
   .where('name', '蒸汽表');
   yield trx.insert({
@@ -124,7 +124,7 @@ var createMeterReadings = function *(trx) {
     meter_type_id,
     price_setting_id:
       (yield trx('settings').select('id').where('name', '蒸汽价'))[0].id,
-  }).into('meter_readings');
+  }).into('meter_reading_types');
 };
 
 var createSettings = function (trx) {
@@ -162,7 +162,7 @@ knex.transaction(function (trx) {
     yield createInvoiceTypes(trx);
     yield createMeterTypes(trx);
     yield createSettings(trx);
-    yield * createMeterReadings(trx);
+    yield * createMeterReadingTypes(trx);
   });
 })
 .then(function () {
