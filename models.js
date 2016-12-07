@@ -195,6 +195,7 @@ exports.charge_bills = {
   account_term_id: t => t.integer('account_term_id')
   .references('account_terms.id').notNullable().unique(),
   def: t => t.jsonb('def'),
+  closed: t => t.boolean('closed').defaultTo(false),
 };
 
 // 承包人费用清单

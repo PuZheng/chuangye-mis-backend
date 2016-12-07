@@ -43,6 +43,7 @@
     "gulp-nodemon": "^2.1.0",
     "inquirer": "^1.2.2",
     "pinyin": "^2.8.0",
-    "sprintf-js": "^1.0.3"
+    "sprintf-js": "^1.0.3",
+    "yargs": "^6.5.0"
   }
 }

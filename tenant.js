@@ -247,4 +247,4 @@ var updateObject = function (req, res, next) {
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), updateObject);
 
-module.exports = { router, getObject };
+module.exports = { router, getObject, fullfill };

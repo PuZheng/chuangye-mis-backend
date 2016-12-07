@@ -160,4 +160,4 @@ var update = function update(req, res, next) {
 };
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), update);
-module.exports = { router };
+module.exports = { router, fullfill, getObject };
