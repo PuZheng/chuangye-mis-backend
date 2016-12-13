@@ -7,6 +7,8 @@ var co = require('co');
 var { entityTypes, storeOrderTypes, storeOrderDirections, voucherSubjects,
   voucherTypes } = require('./const');
 var settingGroups = require('./const').settingGroups;
+var R = require('ramda');
+var { METER_TYPES } = require('../const');
 
 var admin = config.get('admin');
 
@@ -86,7 +88,9 @@ var createInvoiceTypes = function (trx) {
 
 var createMeterTypes = function(trx) {
   return trx.batchInsert(
-    'meter_types', [{ name: '电表' }, { name: '水表' }, { name: '蒸汽表' }]
+    'meter_types', R.values(METER_TYPES).map(function (it) {
+      return { name: it };
+    })
   );
 };
 
@@ -97,7 +101,7 @@ var createMeterReadingTypes = function *(trx) {
     name: '平电读数',
     meter_type_id,
     price_setting_id:
-      (yield trx('settings').select('id').where('name', '基本电价'))[0].id,
+      (yield trx('settings').select('id').where('name', '高峰电价'))[0].id,
   }, {
     name: '谷电读数',
     meter_type_id,
@@ -107,7 +111,7 @@ var createMeterReadingTypes = function *(trx) {
     name: '峰电读数',
     meter_type_id,
     price_setting_id:
-      (yield trx('settings').select('id').where('name', '高峰电价'))[0].id,
+      (yield trx('settings').select('id').where('name', '尖峰电价'))[0].id,
   }]);
   [{ id: meter_type_id }] = yield trx('meter_types').select('*')
   .where('name', '水表');
@@ -125,10 +129,20 @@ var createMeterReadingTypes = function *(trx) {
     price_setting_id:
       (yield trx('settings').select('id').where('name', '蒸汽价'))[0].id,
   }).into('meter_reading_types');
+  [{ id: meter_type_id }] = yield trx('meter_types').select('*')
+  .where('name', '生活水表');
+  yield trx.insert({
+    name: '读数',
+    meter_type_id,
+    price_setting_id:
+      (yield trx('settings').select('id').where('name', '生活水价'))[0].id,
+  }).into('meter_reading_types');
 };
 
 var createSettings = function (trx) {
   var rows = [
+    // 一般
+    { name: '增值税率', value: '0.17', group: settingGroups.增值税率 },
     // power
     { name: '尖峰电价', value: '1.123', comment: '元/度', group: settingGroups.电费},
     { name: '低谷电价', value: '0.457', comment: '元/度', group: settingGroups.电费},

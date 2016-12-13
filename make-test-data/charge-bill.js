@@ -48,7 +48,7 @@ var settingsRow = function settingsRow(meterType) {
 
 var headerRow = function headerRow(meterType) {
   return [
-    header('车间'), header('承包人'), header('表设备'),
+    header('车间'), header('承包人'), header('表设备'), header('倍数'),
     ...meterType.meterReadingTypes.map(({ name }) => header('上期' + name)),
     ...meterType.meterReadingTypes.map(({ name }) => header(name)),
     header('总费用(元)')
@@ -85,42 +85,55 @@ var meterRow = function meterRow(meter, tenants) {
   };
   let nameCell = ({ name }) => ({ val: name, readonly: true });
   let lastAccountTermValueCell = function (meter, meterReadingType) {
-    let { value } = R.find(
+    let meterReading = R.find(
       it => it.meterReadingTypeId == meterReadingType.id
-    )(meter.meterReadings) || {};
+    )(meter.meterReadings);
+    let { value, id } =  meterReading;
     return {
       label: meter.name + '-上期' + meterReadingType.name,
+      'data-meter-reading-id': id,
+      'data-last-account-term': true,
       val: value,
       readonly: true
     };
   };
   let valueCell = function valueCell(meter, meterReadingType) {
-    let { value: lastAccountTermValue } = R.find(
+    let meterReading = R.find(
       it => it.meterReadingTypeId == meterReadingType.id
-    )(meter.meterReadings) || {};
+    )(meter.meterReadings);
+    let { value: lastAccountTermValue, id } = meterReading;
     return {
       label: meter.name + '-' + meterReadingType.name,
+      'data-meter-reading-id': id,
       val: lastAccountTermValue + C.natural({ min: 10, max: 200 }),
     };
   };
   let sumCell = function (meter, meterReadingTypes) {
+    let readingSumQuote = meterReadingTypes.map(
+      function ({ name, priceSetting }) {
+        let lastValueQuote = '${' + meter.name + '-上期' + name + '}';
+        let valueQuote = '${' + meter.name + '-' + name + '}';
+        let settingQuote = '${' + 'setting-' + priceSetting.name + '}';
+        return `(${valueQuote} - ${lastValueQuote}) * ${settingQuote}`;
+      }
+    ).join('+');
+    let timesQuote = '${' + meter.name + '倍数}';
     return {
-      val: '=' + meterReadingTypes.map(
-        function ({ name, priceSetting }) {
-          let lastValueQuote = '${' + meter.name + '-上期' + name + '}';
-          let valueQuote = '${' + meter.name + '-' + name + '}';
-          let settingQuote = '${' + 'setting-' + priceSetting.name + '}';
-          return `(${valueQuote} - ${lastValueQuote}) * ${settingQuote}`;
-        }
-      ).join('+'),
+      val: `=(${readingSumQuote}) * ${timesQuote}`,
       readonly: true,
       label: 'sum-of-' + meter.department.id,
     };
   };
   let { meterType } = meter;
   let { meterReadingTypes } = meterType;
+  let timesCell = ({ times, name }) => ({
+    val: times,
+    readonly: true,
+    label: name + '倍数',
+  });
   return [
     departmentCell(meter), entityCell(meter, tenants), nameCell(meter),
+    timesCell(meter),
     ...meterReadingTypes.map(function (meterReadingType) {
       return lastAccountTermValueCell(meter, meterReadingType);
     }),
