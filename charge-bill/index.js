@@ -7,27 +7,28 @@ var casing = require('casing');
 var R = require('ramda');
 var departmentChargeBillGrid = require('./department-charge-bill-grid');
 var { METER_TYPES } = require('../const');
+var chargeBillDef = require('./charge-bill-def');
 
 var router = new Router();
 
 var create = function (req, res, next) {
-  let {accountTermId, def} = req.body;
+  let { accountTermId } = req.body;
   return co(function *() {
-    let [{ count }] = yield knex('charge_bills')
+    let [ obj ] = yield knex('charge_bills')
     .where('account_term_id', accountTermId)
-    .count();
-    if (count > 0) {
-      res.json(403, {
-        reason: '一个帐期只能对应一个费用清单',
-      });
+    .select('*');
+    if (obj) {
+      res.json(casing.camelize(obj));
+      next();
+      return;
     }
     yield knex('charge_bills').insert({
       account_term_id: accountTermId,
-      def,
+      def: chargeBillDef(),
     })
-    .returning('id')
-    .then(function ([id]) {
-      res.json({ id });
+    .returning('*')
+    .then(function ([obj]) {
+      res.json(casing.camelize(obj));
       next();
     });
   })

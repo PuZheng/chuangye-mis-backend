@@ -8,7 +8,7 @@ var { entityTypes, storeOrderTypes, storeOrderDirections, voucherSubjects,
   voucherTypes } = require('./const');
 var settingGroups = require('./const').settingGroups;
 var R = require('ramda');
-var { METER_TYPES } = require('../const');
+var { METER_TYPES } = require('./const');
 
 var admin = config.get('admin');
 
