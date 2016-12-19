@@ -1,4 +1,6 @@
 var R = require('ramda');
+var { METER_TYPES } = require('../const');
+var assert = require('assert');
 
 var header = function header(s) {
   let cellDef = {
@@ -94,8 +96,11 @@ var searchCells = function searchCell(fragment, test) {
   );
 };
 
+/**
+ * @meterData contains: id, name times, meterReadings
+ * */
 var meterFragment = function ({
-  ns, meterData, meterReadingTypeMap, 可抵税
+  ns, meterData, 可抵税
 }) {
   let timesCell = {
     val: meterData.times,
@@ -103,8 +108,15 @@ var meterFragment = function ({
     label: ns + meterData.id + '-' + '倍数'
   };
   let meterReadingRow = function (mr) {
+    assert(['id', 'price', 'lastAccountTermValue', 'value', 'name']
+           .every(function (keys) {
+             return function (k) {
+               return ~keys.indexOf(k);
+             };
+           }(Object.keys(mr))));
+    // mr contains: id, price, lastAccountTermValue, name, value
     let lastAccountTermValueCell = {
-      val: mr.lastAccountTermValueCell,
+      val: mr.lastAccountTermValue,
       label: ns + mr.id + '-上期读数',
       readonly: true,
     };
@@ -122,7 +134,7 @@ var meterFragment = function ({
       'data-tag': '表读数实际度数',
     };
     let unitPriceCell = {
-      val: meterReadingTypeMap[mr.meterReadingTypeId].priceSetting.value,
+      val: mr.price,
       readonly: true,
       label: ns + mr.id + '-单价',
     };
@@ -159,12 +171,12 @@ var meterFragment = function ({
 };
 
 var 电表Fragment = function ({
-  meterTypeData, totalConsumption, totalFee, meterReadingTypeMap,
-  上浮单价, 线损率, 变压器容量, 基本电费每KV
+  meterTypeData, totalConsumption, totalFee,
+  settings
 }) {
   let ns = '电表-';
   let 线损率Cell = {
-    val: 线损率,
+    val: settings.线损率,
     readonly: true,
     label: ns + '线损率'
   };
@@ -177,12 +189,12 @@ var 电表Fragment = function ({
     label: ns + '公司当期总直接电费',
   };
   let 变压器容量Cell = {
-    val: 变压器容量,
+    val: settings.变压器容量,
     readonly: true,
     label: ns + '变压器容量',
   };
   let 基本电费每KVCell = {
-    val: 基本电费每KV,
+    val: settings.基本电费每KV,
     readonly: true,
     label: ns + '基本电费每KV',
   };
@@ -209,10 +221,7 @@ var 电表Fragment = function ({
   let 设备直接费用Fragment = (function() {
     let meterFragments =  meterTypeData.meters.map(function (meterData) {
       return meterFragment({
-        ns: '电表',
-        meterData,
-        meterReadingTypeMap,
-        可抵税: true
+        ns: '电表', meterData, 可抵税: true
       });
     });
     let 电表总计度数Cell = {
@@ -254,7 +263,7 @@ var 电表Fragment = function ({
       readonly: true,
     };
     let 上浮单价Cell = {
-      val: 上浮单价,
+      val: settings.上浮单价,
       label: ns + '上浮单价',
       readonly: true
     };
@@ -367,7 +376,7 @@ var 电表Fragment = function ({
 };
 
 var 水表Fragment = function ({
-  ns, meterTypeData, meterReadingTypeMap, 污水治理价格, 污泥费价格
+  ns, meterTypeData, settings
 }) {
   let headerRow = [
     header('项目'), header('表设备'), header('倍数'), header('读数'),
@@ -378,8 +387,7 @@ var 水表Fragment = function ({
     污泥费可抵税额Cell;
   let 设备直接费用Fragment = meterTypeData.meters.map(function (meterData) {
     return meterFragment({
-      ns, meterData, meterReadingTypeMap,
-      可抵税: false,
+      ns, meterData, 可抵税: false,
     });
   })
   .reduce(R.concat, [])
@@ -399,7 +407,7 @@ var 水表Fragment = function ({
       label: ns + '水表总计度数',
     };
     let 单价Cell = {
-      val: 污水治理价格,
+      val: settings.污水治理价格,
       label: ns + '污水治理价格',
       realonly: true
     };
@@ -433,7 +441,7 @@ var 水表Fragment = function ({
       label: ns + '水表总计度数',
     };
     let 单价Cell = {
-      val: 污泥费价格,
+      val: settings.污泥费价格,
       readonly: true,
       label: ns + '污泥费价格',
     };
@@ -489,15 +497,12 @@ var 水表Fragment = function ({
 };
 
 var 蒸汽表Fragment = function ({
-  meterTypeData,
-  蒸汽线损,
-  meterReadingTypeMap,
-  线损蒸汽价
+  meterTypeData, settings,
 }) {
   let ns = '蒸汽表';
   let 线损金额Cell, 线损可抵税额Cell;
   let 蒸汽线损Cell = {
-    val: 蒸汽线损,
+    val: settings.蒸汽线损,
     readonly: true,
     label: ns + '整齐线损',
   };
@@ -505,10 +510,9 @@ var 蒸汽表Fragment = function ({
     header('蒸汽线损'),
     蒸汽线损Cell,
   ];
-  let 设备直接费用Fragment = meterTypeData.meters.map(function (meter) {
+  let 设备直接费用Fragment = meterTypeData.meters.map(function (meterData) {
     return meterFragment({
-      ns, meter, meterReadingTypeMap,
-      可抵税: true,
+      ns, meterData, 可抵税: true,
     });
   })
   .reduce(R.concat, [])
@@ -526,7 +530,7 @@ var 蒸汽表Fragment = function ({
       label: ns + '实际度数',
     };
     let 单价Cell = {
-      val: 线损蒸汽价,
+      val: settings.线损蒸汽价,
       readonly: true,
       label: ns + '单价'
     };
@@ -596,16 +600,31 @@ var 总结Fragment = function () {
   ];
 }();
 
-module.exports = function () {
+module.exports = function departmentChargeBillGrid({
+  meterTypes, totalElectricConsumption, totalElectricFee,
+  settings
+}) {
   return [
-    ['电表费用', '#3f1634', 电表Fragment],
+    ['电表费用', '#3f1634', 电表Fragment({
+      meterTypeData: R.find(R.propEq('name', METER_TYPES.电表))(meterTypes),
+      totalConsumption: totalElectricConsumption,
+      totalFee: totalElectricFee,
+      settings
+    })],
     ['水表费用', '#0b1c1f', 水表Fragment({
       ns: '水表',
+      meterTypeData: R.find(R.propEq('name', METER_TYPES.水表))(meterTypes),
+      settings
     })],
     ['生活水表费用', '#200d29', 水表Fragment({
-      ns: '生活水表'
+      ns: '生活水表',
+      meterTypeData: R.find(R.propEq('name', METER_TYPES.生活水表))(meterTypes),
+      settings
     })],
-    ['蒸汽表费用', '#0c0605', 蒸汽表Fragment],
+    ['蒸汽表费用', '#0c0605', 蒸汽表Fragment({
+      meterTypeData: R.find(R.propEq('name', METER_TYPES.蒸汽表))(meterTypes),
+      settings
+    })],
     ['总结', '#2b1139', 总结Fragment],
   ]
   .map(function ([title, color, fragment]) {

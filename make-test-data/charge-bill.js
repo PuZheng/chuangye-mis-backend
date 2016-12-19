@@ -88,11 +88,9 @@ var meterRow = function meterRow(meter, tenants) {
     let meterReading = R.find(
       it => it.meterReadingTypeId == meterReadingType.id
     )(meter.meterReadings);
-    let { value, id } =  meterReading;
+    let { value } =  meterReading;
     return {
       label: meter.name + '-上期' + meterReadingType.name,
-      'data-meter-reading-id': id,
-      'data-last-account-term': true,
       val: value,
       readonly: true
     };
@@ -104,7 +102,13 @@ var meterRow = function meterRow(meter, tenants) {
     let { value: lastAccountTermValue, id } = meterReading;
     return {
       label: meter.name + '-' + meterReadingType.name,
-      'data-meter-reading-id': id,
+      data: {
+        id,
+        tag: 'meter-reading',
+        name: meterReadingType.name,
+        price: meterReadingType.priceSetting.value,
+        lastAccountTermValue,
+      },
       val: lastAccountTermValue + C.natural({ min: 10, max: 200 }),
     };
   };
@@ -131,17 +135,26 @@ var meterRow = function meterRow(meter, tenants) {
     readonly: true,
     label: name + '倍数',
   });
-  return [
-    departmentCell(meter), entityCell(meter, tenants), nameCell(meter),
-    timesCell(meter),
-    ...meterReadingTypes.map(function (meterReadingType) {
-      return lastAccountTermValueCell(meter, meterReadingType);
-    }),
-    ...meterReadingTypes.map(function (meterReadingType) {
-      return valueCell(meter, meterReadingType);
-    }),
-    sumCell(meter, meterReadingTypes),
-  ];
+  return {
+    data: {
+      tag: 'meter',
+      id: meter.id,
+      name: meter.name,
+      departmentId: meter.departmentId,
+      times: meter.times,
+    },
+    cells: [
+      departmentCell(meter), entityCell(meter, tenants), nameCell(meter),
+      timesCell(meter),
+      ...meterReadingTypes.map(function (meterReadingType) {
+        return lastAccountTermValueCell(meter, meterReadingType);
+      }),
+      ...meterReadingTypes.map(function (meterReadingType) {
+        return valueCell(meter, meterReadingType);
+      }),
+      sumCell(meter, meterReadingTypes),
+    ]
+  };
 };
 
 co(function *() {
