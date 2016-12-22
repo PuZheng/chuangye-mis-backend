@@ -35,6 +35,7 @@
     "restify-router": "^0.2.1"
   },
   "devDependencies": {
+    "assert-plus": "^1.0.0",
     "axios": "^0.15.2",
     "chalk": "^1.1.3",
     "chance": "^1.0.4",
@@ -43,6 +44,7 @@
     "gulp-nodemon": "^2.1.0",
     "inquirer": "^1.2.2",
     "pinyin": "^2.8.0",
+    "prettyjson": "^1.2.1",
     "sprintf-js": "^1.0.3",
     "yargs": "^6.5.0"
   }

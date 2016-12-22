@@ -61,6 +61,7 @@ router.post(
   }
 );
 
+// 创建收支明细表
 var makeAccountBook = function ({ vouchers, account, entityId }) {
   let header = {
     readonly: true,
@@ -131,7 +132,7 @@ var makeAccountBook = function ({ vouchers, account, entityId }) {
   return {
     sheets: [
       {
-        grids: [
+        grid: [
           row0,
           row1,
           ...voucherRows,

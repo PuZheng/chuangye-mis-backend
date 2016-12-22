@@ -8,10 +8,14 @@ var R = require('ramda');
 var departmentChargeBillGrid = require('./department-charge-bill-grid');
 var { METER_TYPES } = require('../const');
 var chargeBillDef = require('./charge-bill-def');
+var logger = require('../logger');
+/* eslint-disable no-unused-vars */
+var prettyjson = require('prettyjson');
+/* eslint-enable no-unused-vars */
 
 var router = new Router();
 
-var create = function (req, res, next) {
+var getOrCreate = function (req, res, next) {
   let { accountTermId } = req.body;
   return co(function *() {
     let [ obj ] = yield knex('charge_bills')
@@ -24,7 +28,7 @@ var create = function (req, res, next) {
     }
     yield knex('charge_bills').insert({
       account_term_id: accountTermId,
-      def: chargeBillDef(),
+      def: yield chargeBillDef(),
     })
     .returning('*')
     .then(function ([obj]) {
@@ -38,7 +42,7 @@ var create = function (req, res, next) {
   });
 };
 
-router.post('/object/', loginRequired, restify.bodyParser(), create);
+router.post('/object/', loginRequired, restify.bodyParser(), getOrCreate);
 
 router.post(
   '/object/:id/:action', loginRequired,
@@ -63,78 +67,13 @@ router.post(
           next();
           return;
         }
-        yield *createDepartmentChargeBills();
-        // create charge bills for each department
-        let { sheets }  = chargeBill.def;
-        let settings = yield knex('settings').select('*')
-        .then(casing.camelize);
-        // 计算(公司)总实际用电和总直接电费
-        // 表读数类型id -> 该类型下所有表实际读数之和
-        let totalElectricFee = 0;
-        let totalElectricConsumption = 0;
-        let 电表Sheet = R.find(R.propEq('label', METER_TYPES.电表))(sheets);
-        // 表id -> 表倍数
-        let meterTimesMap = R.fromPairs(
-          meters.map(it => [it.id, it.times])
-        );
-        for (let row of 电表Sheet.grids) {
-          for (let cell of row) {
-            if (R.path(['data', 'tag'])(cell) == 'meter-reading') {
-              let { lastAccountTermValue, meterId, price } = cell.data;
-              let consumption =
-                (cell.val - lastAccountTermValue) * meterTimesMap[meterId];
-              totalElectricConsumption += consumption;
-              totalElectricFee += consumption * price;
-            }
-          }
-        }
-
-        let meters = yield knex('meters').select(['id', 'times'])
-        .then(casing.camelize);
-        // 车间ID -> ( 表类型 -> (表 -> 表读数) )
-        let data = {};
-        for (let sheet of sheets) {
-          for (let row of sheet.grids) {
-            if (!Array.isArray(row)) {
-              let tag = R.path(['data', 'tag'])(row);
-              if (tag == 'meter') {
-                let { id, name, departmentId, times } = row.data;
-                if (!data[departmentId]) {
-                  data[departmentId] = {};
-                }
-                let meterTypeId = R.path(['data', 'meterTypeId'])(row);
-                if (!data[departmentId][meterTypeId]) {
-                  data[departmentId][meterTypeId] = [];
-                }
-                let meterData = {
-                  id,
-                  name,
-                  times,
-                  meterReadings: row.cells
-                  .filter(R.path(['data', 'tag'], 'meter-reading'))
-                  .map(R.prop('data'))
-                };
-                data[departmentId][meterTypeId].push(meterData);
-              }
-            }
-          }
-        }
-        for (let department_id in data) {
-          yield trx('department_charge_bills').insert({
-            account_term_id: chargeBill.accountTermId,
-            department_id,
-            def: departmentChargeBillGrid({
-              meterTypes: R.values(data[department_id]),
-              totalElectricConsumption,
-              totalElectricFee,
-              settings: R.fromPairs(settings.map(it => [it.name, it.value])),
-            })
-          });
-        }
+        yield createDepartmentChargeBills(trx, chargeBill);
         // modify each meter reading's value
-        for (let sheet of sheets) {
-          for (let row of sheet.grids) {
-            for (let cell of row) {
+        for (let sheet of chargeBill.def.sheets) {
+          for (let row of sheet.grid.filter(
+            it => !R.isArrayLike(it) && it.data.tag == 'meter'
+          )) {
+            for (let cell of row.cells) {
               if (R.path(['data', 'tag'])(cell) == 'meter-reading') {
                 yield trx('meter_readings').update({ value: cell.val })
                 .where({ id: cell.data.id });
@@ -190,6 +129,88 @@ var update = function (req, res, next) {
 };
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), update);
+
+var calcTotalElectricConsumptionAndFee = function (sheet) {
+  let totalElectricFee = 0;
+  let totalElectricConsumption = 0;
+  for (let row of sheet.grid.filter(R.pathEq(['data', 'tag'], 'meter'))) {
+    for (let cell of row.cells) {
+      if (R.path(['data', 'tag'])(cell) == 'meter-reading') {
+        let { lastAccountTermValue, price } = cell.data;
+        let consumption =
+          (cell.val - lastAccountTermValue) * Number(row.data.times);
+        totalElectricConsumption += consumption;
+        totalElectricFee += consumption * Number(price);
+      }
+    }
+  }
+  totalElectricFee = totalElectricFee.toFixed(2);
+  return {
+    totalElectricFee,
+    totalElectricConsumption,
+  };
+};
+
+var createDepartmentChargeBills = function *(trx, chargeBill) {
+  let { def: { sheets }, accountTermId } = chargeBill;
+  let 电表Sheet = R.find(R.propEq('label', METER_TYPES.电表))(sheets);
+  let {
+    totalElectricConsumption,
+    totalElectricFee
+  } = calcTotalElectricConsumptionAndFee(电表Sheet);
+  /* eslint-disable max-len */
+  logger.info(`公司总直接用电量: ${totalElectricConsumption}, 公司总直接电费: ${totalElectricFee}`);
+  /* eslint-enable max-len */
+  let settings = yield knex('settings').select('*')
+  .then(casing.camelize);
+  let data = {};
+  let meterTypes = yield knex('meter_types').select('*').then(casing.camelize);
+  for (let sheet of sheets) {
+    let meterType = R.find(R.propEq('name', sheet.label))(meterTypes);
+    for (let row of sheet.grid.filter(R.pathEq(['data', 'tag'], 'meter'))) {
+      let { id, name, departmentId, times } = row.data;
+      if (!data[departmentId]) {
+        data[departmentId] = {};
+      }
+      if (!data[departmentId][meterType.id]) {
+        data[departmentId][meterType.id] = R.clone(meterType);
+        data[departmentId][meterType.id].meters = [];
+      }
+
+      let meterData = {
+        id,
+        name,
+        times,
+        meterReadings: row.cells
+        .filter(R.pathEq(['data', 'tag'], 'meter-reading'))
+        .map(function (cell) {
+          let value = cell.val;
+          return Object.assign(R.clone(cell.data), { value });
+        })
+      };
+      data[departmentId][meterType.id].meters.push(meterData);
+    }
+  }
+  for (let department_id in data) {
+    let grid = departmentChargeBillGrid({
+      meterTypes: R.values(data[department_id]),
+      totalElectricConsumption,
+      totalElectricFee,
+      settings: R.fromPairs(settings.map(it => [it.name, it.value])),
+    });
+    logger.debug(prettyjson.render(grid.map(function (row) {
+      if (Array.isArray(row)) {
+        return row.map(function (cell) { return cell || ''; });
+      }
+      return { cells: row.cells.map(it => it || '') };
+    })));
+    yield trx('department_charge_bills').insert({
+      account_term_id: accountTermId,
+      department_id,
+      def: { sheets: [ { grid } ] },
+    });
+  }
+};
 
 module.exports = {
   router,
