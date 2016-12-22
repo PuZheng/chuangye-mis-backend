@@ -52,6 +52,7 @@ if (require.main === module) {
         yield makeMeters(trx, '电表');
         yield makeMeters(trx, '水表');
         yield makeMeters(trx, '蒸汽表');
+        yield makeMeters(trx, '生活水表');
         logger.info('meters completed');
       } catch (e) {
         logger.error(e);

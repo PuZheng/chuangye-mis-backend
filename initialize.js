@@ -7,6 +7,8 @@ var co = require('co');
 var { entityTypes, storeOrderTypes, storeOrderDirections, voucherSubjects,
   voucherTypes } = require('./const');
 var settingGroups = require('./const').settingGroups;
+var R = require('ramda');
+var { METER_TYPES } = require('./const');
 
 var admin = config.get('admin');
 
@@ -86,7 +88,9 @@ var createInvoiceTypes = function (trx) {
 
 var createMeterTypes = function(trx) {
   return trx.batchInsert(
-    'meter_types', [{ name: '电表' }, { name: '水表' }, { name: '蒸汽表' }]
+    'meter_types', R.values(METER_TYPES).map(function (it) {
+      return { name: it };
+    })
   );
 };
 
@@ -97,7 +101,7 @@ var createMeterReadingTypes = function *(trx) {
     name: '平电读数',
     meter_type_id,
     price_setting_id:
-      (yield trx('settings').select('id').where('name', '基本电价'))[0].id,
+      (yield trx('settings').select('id').where('name', '高峰电价'))[0].id,
   }, {
     name: '谷电读数',
     meter_type_id,
@@ -107,7 +111,7 @@ var createMeterReadingTypes = function *(trx) {
     name: '峰电读数',
     meter_type_id,
     price_setting_id:
-      (yield trx('settings').select('id').where('name', '高峰电价'))[0].id,
+      (yield trx('settings').select('id').where('name', '尖峰电价'))[0].id,
   }]);
   [{ id: meter_type_id }] = yield trx('meter_types').select('*')
   .where('name', '水表');
@@ -125,25 +129,36 @@ var createMeterReadingTypes = function *(trx) {
     price_setting_id:
       (yield trx('settings').select('id').where('name', '蒸汽价'))[0].id,
   }).into('meter_reading_types');
+  [{ id: meter_type_id }] = yield trx('meter_types').select('*')
+  .where('name', '生活水表');
+  yield trx.insert({
+    name: '读数',
+    meter_type_id,
+    price_setting_id:
+      (yield trx('settings').select('id').where('name', '生活水价'))[0].id,
+  }).into('meter_reading_types');
 };
 
 var createSettings = function (trx) {
   var rows = [
+    // 一般
+    { name: '上浮单价', value: '0.2' },
+    { name: '增值税率', value: '0.17', group: settingGroups.增值税率 },
     // power
     { name: '尖峰电价', value: '1.123', comment: '元/度', group: settingGroups.电费},
     { name: '低谷电价', value: '0.457', comment: '元/度', group: settingGroups.电费},
     { name: '高峰电价', value: '0.941', comment: '元/度', group: settingGroups.电费},
-    { name: '基本电价', value: '30', comment: '元/KV', group: settingGroups.电费},
+    { name: '基本电费每KV', value: '30', comment: '元/KV', group: settingGroups.电费},
     { name: '线损率', value: '6', comment: '百分比', group: settingGroups.电费},
     { name: '变压器容量', value: '5200', comment: 'KV', group: settingGroups.电费},
     // water
     { name: '工业水价', value: '3.3', comment: '元/吨', group: settingGroups.水费 },
     { name: '生活水价', value: '6.92', comment: '元/吨', group: settingGroups.水费 },
-    { name: '污水治理费', value: '41.0', comment: '元/吨', group: settingGroups.水费 },
+    { name: '污水治理价格', value: '41.0', comment: '元/吨', group: settingGroups.水费 },
     {
       name: '治理税可地税部分', value: '41.0', comment: '元/吨', group: settingGroups.水费
     },
-    { name: '污泥费', value: '0.71', comment: '元/吨', group: settingGroups.水费 },
+    { name: '污泥费价格', value: '0.71', comment: '元/吨', group: settingGroups.水费 },
     // 蒸汽费用
     { name: '蒸汽价', value: '261.8', comment: '元/吨',  group: settingGroups.蒸汽费 },
     { name: '线损蒸汽价', value: '226.8', comment: '元/吨', group: settingGroups.蒸汽费 },

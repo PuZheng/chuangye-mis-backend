@@ -199,12 +199,13 @@ exports.charge_bills = {
 };
 
 // 承包人费用清单
-exports.tenant_charge_bills = {
+exports.department_charge_bills = {
   id: t => t.increments(),
   account_term_id: t => t.integer('account_term_id')
-  .references('account_terms.id').notNullable().unique(),
-  tenant_id: t => t.integer('tenant_id').references('tenants.id'),
+  .references('account_terms.id').notNullable(),
+  department_id: t => t.integer('department_id').references('departments.id'),
   def: t => t.jsonb('def'),
+  '': t => t.unique(['department_id', 'account_term_id'])
 };
 
 // 收支清单
