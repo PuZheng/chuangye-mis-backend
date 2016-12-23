@@ -120,7 +120,8 @@ var meterRow = function meterRow(meter) {
       val: `=@{${timesCell.label}} * (${sumQuote})`,
       readonly: true,
       label: 'sum-of-' + meter.id,
-      data: { tag: 'sum' }
+      data: { tag: 'sum' },
+      format: '%.2f',
     };
   }());
   return {

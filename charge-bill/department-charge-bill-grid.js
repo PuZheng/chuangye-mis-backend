@@ -67,6 +67,10 @@ var addFragmentHeaderRow = function (fragment, title, style) {
 var stylize = function (part, style) {
   for (var i = 0, len = part.length; i < len; i++) {
     let cell = part[i];
+    if (Array.isArray(cell)) {
+      part[i] = stylize(cell, style);
+      continue;
+    }
     if (cell === void 0) {
       cell = {};
     }
@@ -131,6 +135,7 @@ var meterFragment = function ({
       data: {
         tag: '表读数实际度数'
       },
+      format: '%.2f',
     };
     let unitPriceCell = {
       val: mr.price,
@@ -143,7 +148,8 @@ var meterFragment = function ({
       label: ns + mr.id + '-金额',
       data: {
         tag: '表读数金额',
-      }
+      },
+      format: '%.2f',
     };
     let 表读数可抵税额Cell = R.ifElse(
       R.identity,
@@ -154,6 +160,7 @@ var meterFragment = function ({
         readonly: true,
         data: { tag: '表读数可抵税额' },
         label: ns + mr.id + '-可抵税额',
+        format: '%.2f',
       }),
       R.always(readonly('0'))
     )(可抵税);
@@ -236,7 +243,8 @@ var 电表Fragment = function ({
         return meter.meterReadings.map(it => `@{${ns+it.id}-度数}`).join('+');
       }).join('+'),
       readonly: true,
-      label: ns + '电表总计度数'
+      label: ns + '电表总计度数',
+      format: '%.2f',
     };
     let 金额Cell = {
       val: '=' + meterTypeData.meters.map(function (meter) {
@@ -244,6 +252,7 @@ var 电表Fragment = function ({
       }).join('+'),
       readonly: true,
       label: ns + '直接费用',
+      format: '%.2f',
     };
     let 可抵税额Cell = {
       /* eslint-disable max-len */
@@ -251,6 +260,7 @@ var 电表Fragment = function ({
       /* eslint-enable max-len */
       readonly: true,
       label: ns + '直接费用可抵税额',
+      format: '%.2f',
     };
     let summaryRow = [
       //|表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
@@ -277,13 +287,15 @@ var 电表Fragment = function ({
     let 金额Cell = {
       val: `=@{${ns}上浮单价} * @{${ns}电表总计度数}`,
       readonly: true,
-      label: ns + '上浮费用'
+      label: ns + '上浮费用',
+      format: '%.2f',
     };
     let 可抵税额Cell = {
       /* eslint-disable max-len */
       val: `=@{${金额Cell.label}} * @{${TAX_RATE_CELL_LABEL}}/(1 + @{${TAX_RATE_CELL_LABEL}})`,
       /* eslint-enable max-len */
       readonly: true,
+      format: '%.2f',
     };
     return [
       // 表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
@@ -303,17 +315,20 @@ var 电表Fragment = function ({
       /* eslint-enable max-len */
       readonly: true,
       label: ns + '线损单价',
+      format: '%.2f',
     };
     let 金额Cell = {
       val: `=@{${ns}电表总计度数} * @{${线损单价Cell.label}}`,
       label: ns + '线损分摊费用',
       readonly: true,
+      format: '%.2f',
     };
     let 可抵税额Cell = {
       /* eslint-disable max-len */
       val: `=@{${金额Cell.label}} * @{${TAX_RATE_CELL_LABEL}}/(1 + @{${TAX_RATE_CELL_LABEL}})`,
       /* eslint-enable max-len */
       readonly: true,
+      format: '%.2f',
     };
     return [
       // 表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
@@ -333,17 +348,20 @@ var 电表Fragment = function ({
       /* eslint-enable max-len */
       readonly: true,
       label: ns + '基本电费单价',
+      format: '%.2f',
     };
     let 金额Cell = {
       val: `=@{${ns}电表总计度数} * @{${ns}基本电费单价}`,
       label: ns + '基本电费费用',
-      readonly: true
+      readonly: true,
+      format: '%.2f',
     };
     let 可抵税额Cell = {
       /* eslint-disable max-len */
       val: `=@{${金额Cell.label}} * @{${TAX_RATE_CELL_LABEL}}/(1 + @{${TAX_RATE_CELL_LABEL}})`,
       /* eslint-enable max-len */
       readonly: true,
+      format: '%.2f',
     };
     return [
       // 表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
@@ -357,6 +375,7 @@ var 电表Fragment = function ({
       val: `=@{${ns}直接费用} + @{${ns}上浮费用} + @{${ns}线损分摊费用} + @{${ns}基本电费费用}`,
       readonly: true,
       label: ns + '总金额',
+      format: '%.2f',
     };
     let 可抵税额Cell = {
       /* eslint-disable max-len */
@@ -364,6 +383,7 @@ var 电表Fragment = function ({
       /* eslint-enable max-len */
       readonly: true,
       label: ns + '总可抵税额',
+      format: '%.2f',
     };
     return stylize([
       // 表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
@@ -414,6 +434,7 @@ var 水表Fragment = function ({
       ).join('+'),
       readonly: true,
       label: ns + '治理费实际度数',
+      format: '%.2f',
     };
     let 单价Cell = {
       val: settings.污水治理价格,
@@ -423,7 +444,8 @@ var 水表Fragment = function ({
     污水治理费金额Cell = {
       val: `=@{${实际度数Cell.label}} * @{${单价Cell.label}}`,
       readonly: true,
-      label: ns + '污水治理费'
+      label: ns + '污水治理费',
+      format: '%.2f',
     };
     污水治理可抵税额Cell = {
       /* eslint-disable max-len */
@@ -431,6 +453,7 @@ var 水表Fragment = function ({
       /* eslint-enable max-len */
       readonly: true,
       label: ns + '污水治理可抵税额',
+      format: '%.2f',
     };
     // 表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
     return [
@@ -449,6 +472,7 @@ var 水表Fragment = function ({
       ).join('+'),
       readonly: true,
       label: ns + '污泥费实际度数',
+      format: '%.2f',
     };
     let 单价Cell = {
       val: settings.污泥费价格,
@@ -459,6 +483,7 @@ var 水表Fragment = function ({
       val: `=@{${实际度数Cell.label}} * @{${单价Cell.label}}`,
       readonly: true,
       label: ns + '污泥费金额',
+      format: '%.2f',
     };
     污泥费可抵税额Cell = {
       val: '0',
@@ -477,12 +502,13 @@ var 水表Fragment = function ({
         设备直接费用Fragment, R.pathEq(['data', 'tag'], '表读数金额')
       )
       .map(({ label }) => '@{' + label + '}').join('+') +
-        `@{${污水治理费金额Cell.label}}` + `@{${污泥费金额Cell.label}}`,
+        `+@{${污水治理费金额Cell.label}}+@{${污泥费金额Cell.label}}`,
       readonly: true,
       label: ns + '总金额',
       style: {
         fontWeight: '700',
-      }
+      },
+      format: '%.2f',
     };
     let 可抵税额Cell = {
       val: `=@{${污水治理可抵税额Cell.label}}+@{${污泥费可抵税额Cell.label}}`,
@@ -491,6 +517,7 @@ var 水表Fragment = function ({
         fontWeight: '700',
       },
       label: ns + '总可抵税额',
+      format: '%.2f',
     };
     // 表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
     return stylize([
@@ -549,6 +576,7 @@ var 蒸汽表Fragment = function ({
       val: `=@{${单价Cell.label}}*@{${实际度数Cell.label}}`,
       readonly: true,
       label: ns + '线损金额',
+      format: '%.2f',
     };
     线损可抵税额Cell = {
       /* eslint-disable max-len */
@@ -556,6 +584,7 @@ var 蒸汽表Fragment = function ({
       /* eslint-enable max-len */
       readonly: true,
       label: ns + '线损可抵税额',
+      format: '%.2f',
     };
     // groupName|表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
     return [
@@ -572,6 +601,7 @@ var 蒸汽表Fragment = function ({
         `+@{${线损金额Cell.label}}`,
       readonly: true,
       label: ns + '总金额',
+      format: '%.2f',
     };
     let 可抵税额Cell = {
       val: '=' + searchCells(
@@ -581,12 +611,13 @@ var 蒸汽表Fragment = function ({
         `+@{${线损可抵税额Cell.label}}`,
       readonly: true,
       label: ns + '总可抵税额',
+      format: '%.2f',
     };
     // groupName|表设备|倍数|读数|上期|当期|实际度数|单价|金额|可抵税额
-    return [
+    return stylize([
       groupNameCell('总结'), void 0, void 0, void 0, void 0, void 0,
       void 0, void 0, 金额Cell, 可抵税额Cell,
-    ];
+    ], { fontWeight: 700 });
   }());
   let headerRow = [
     header('项目'), header('表设备'), header('倍数'), header('读数'),
@@ -607,16 +638,18 @@ var 总结Fragment = function () {
     val: '=' + ['电表', '水表', '生活水表', '蒸汽表'].map(it => '@{' + it + '-总金额}')
     .join('+'),
     readonly: true,
+    format: '%.2f',
   };
   let 可抵税额Cell = {
     val: '=' + ['电表', '水表', '生活水表', '蒸汽表'].map(it => '@{' + it + '-总可抵税额}')
     .join('+'),
-    readonly: true
+    format: '%.2f',
+    readonly: true,
   };
-  return [
+  return stylize([
     [header('总金额'), 总金额Cell],
     [header('可抵税额'), 可抵税额Cell]
-  ];
+  ], { fontWeight: 700 });
 };
 
 module.exports = function departmentChargeBillGrid({
