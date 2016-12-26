@@ -178,6 +178,11 @@ knex.transaction(function (trx) {
     yield createMeterTypes(trx);
     yield createSettings(trx);
     yield * createMeterReadingTypes(trx);
+    yield trx.insert({
+      name: '氰化钠',
+      unit: 'kg',
+      acronym: 'qhn',
+    }).into('store_subjects');
   });
 })
 .then(function () {
