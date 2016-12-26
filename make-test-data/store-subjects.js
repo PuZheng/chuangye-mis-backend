@@ -1,17 +1,20 @@
 #! /usr/bin/env node
 var knex = require('../knex');
 var logger = require('../logger');
+var { STORE_SUBJECT_TYPES } = require('../const');
 
 
 var makeStoreSubjects = function () {
   var rows = [
-    { name: '原材料1', unit: 'kg', acronym: 'ycl1' },
-    { name: '原材料2', unit: '吨', acronym: 'ycl2' },
-    { name: '原材料3', unit: '桶', acronym: 'ycl3' },
-    { name: '产成品1', unit: '箱', acronym: 'ccp1' },
-    { name: '产成品2', unit: 'kg', acronym: 'ccp2' },
-    { name: '产成品3', unit: '吨', acronym: 'ccp3' },
-  ];
+    [ '原材料1', 'kg', 'ycl1', STORE_SUBJECT_TYPES.MATERIAL ],
+    [ '原材料2', '吨', 'ycl2', STORE_SUBJECT_TYPES.MATERIAL ],
+    [ '原材料3', '桶', 'ycl3', STORE_SUBJECT_TYPES.MATERIAL ],
+    [ '产成品1', '箱', 'ccp1', STORE_SUBJECT_TYPES.PRODUCT ],
+    [ '产成品2', 'kg', 'ccp2', STORE_SUBJECT_TYPES.PRODUCT ],
+    [ '产成品3', '吨', 'ccp3', STORE_SUBJECT_TYPES.PRODUCT ],
+  ].map(function ([name, unit, acronym, type]) {
+    return { name, unit, acronym, type };
+  });
   return knex.batchInsert('store_subjects', rows);
 };
 

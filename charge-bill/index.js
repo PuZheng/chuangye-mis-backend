@@ -6,12 +6,16 @@ var co = require('co');
 var casing = require('casing');
 var R = require('ramda');
 var departmentChargeBillGrid = require('./department-charge-bill-grid');
-var { METER_TYPES } = require('../const');
+var { METER_TYPES, storeOrderDirections, STORE_SUBJECT_TYPES } =
+  require('../const');
 var chargeBillDef = require('./charge-bill-def');
 var logger = require('../logger');
+var layerify = require('../utils/layerify');
 /* eslint-disable no-unused-vars */
 var prettyjson = require('prettyjson');
 /* eslint-enable no-unused-vars */
+var { store_orders: storeOrderDef, store_subjects: storeSubjectDef } =
+  require('../models');
 
 var router = new Router();
 
@@ -163,6 +167,19 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
   /* eslint-enable max-len */
   let settings = yield knex('settings').select('*')
   .then(casing.camelize);
+  let storeOrders = yield knex('store_orders')
+  .where('account_term_id', accountTermId)
+  .where('direction', storeOrderDirections.OUTBOUND)
+  .where('store_subjects.type', STORE_SUBJECT_TYPES.MATERIAL)
+  .join('store_subjects', 'store_subjects.id', 'store_orders.store_subject_id')
+  .select([
+    ...Object.keys(storeOrderDef).map(it => 'store_orders.' + it),
+    ...Object.keys(storeSubjectDef).map(
+      it => 'store_subjects.' + it + ' as store_subject__' + it
+    )
+  ])
+  .then(R.map(layerify))
+  .then(casing.camelize);
   let data = {};
   let meterTypes = yield knex('meter_types').select('*').then(casing.camelize);
   for (let sheet of sheets) {
@@ -196,6 +213,7 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
       meterTypes: R.values(data[department_id]),
       totalElectricConsumption,
       totalElectricFee,
+      storeOrders: storeOrders.filter(so => so.departmentId == department_id),
       settings: R.fromPairs(settings.map(it => [it.name, it.value])),
     });
     logger.debug(prettyjson.render(grid.map(function (row) {

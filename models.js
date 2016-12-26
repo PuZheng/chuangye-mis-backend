@@ -29,7 +29,7 @@ exports.invoice_types = {
   purchaser_type: t => t.enum('purchaser_type', R.values(CONST.entityTypes)),
   is_vat: t => t.boolean('is_vat'),
   store_order_type: t => t.enum('store_order_type',
-                                R.values(CONST.storeOrderTypes)),
+                                R.values(CONST.STORE_SUBJECT_TYPES)),
   store_order_direction: t => t.enum('store_order_direction',
                                     R.values(CONST.storeOrderDirections)),
   // 相关凭证科目， 用于基于发票去生成凭证
@@ -87,6 +87,7 @@ exports.store_subjects = {
   name: t => t.string('name').unique().notNullable(),
   unit: t => t.string('unit', 8).notNullable(),
   acronym: t => t.string('acronym'),
+  type: t => t.enum('type', R.values(CONST.STORE_SUBJECT_TYPES)).notNullable(),
 };
 
 
@@ -136,9 +137,10 @@ exports.store_orders = {
   invoice_id: t => t.integer('invoice_id').references('invoices.id'),
   direction: t => t.enum('direction', R.values(CONST.storeOrderDirections))
   .notNullable(),
-  type: t => t.enum('type', R.values(CONST.storeOrderTypes)).notNullable(),
-  created: t => t.timestamp('created').defaultTo(knex.fn.now()),
-  tenant_id: t => t.integer('tenant_id').references('tenants.id'),
+  department_id: t => t.integer('department_id').references('departments.id'),
+  date: t => t.date('date').notNullable(),
+  account_term_id: t => t.integer('account_term_id')
+  .references('account_terms.id').notNullable(),
 };
 
 

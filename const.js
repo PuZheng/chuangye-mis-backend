@@ -16,7 +16,7 @@ exports.storeOrderDirections = {
   OUTBOUND: '出库',
 };
 
-exports.storeOrderTypes = {
+exports.STORE_SUBJECT_TYPES = {
   MATERIAL: '原材料',
   PRODUCT: '产品',
 };
