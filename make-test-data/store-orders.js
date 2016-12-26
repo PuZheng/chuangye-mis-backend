@@ -4,14 +4,15 @@ var logger = require('../logger');
 var Chance = require('chance');
 var C = new Chance();
 var R = require('ramda');
-var { storeOrderTypes, storeOrderDirections } = require('../const');
+var { STORE_SUBJECT_TYPES, storeOrderDirections } = require('../const');
 var co = require('co');
 var casing = require('casing');
+var moment = require('moment');
 
 var makeStoreOrders = function () {
   return co(function *() {
     let storeSubjects = yield knex('store_subjects').select('*');
-    let tenants = yield knex('tenants').select('*');
+    let departments = yield knex('departments').select('*');
     let invoices = yield knex('invoices')
     .select('*')
     .then(casing.camelize);
@@ -21,41 +22,37 @@ var makeStoreOrders = function () {
       .select('*')
       .then(casing.camelize);
     }
+    let accountTerms = yield knex('account_terms').select('*');
     let rows = R.range(0, 500).map(function () {
+      let storeSubject = C.pickone(storeSubjects);
       let direction = C.pickone(R.values(storeOrderDirections));
-      let type = C.pickone(R.values(storeOrderTypes));
       let quantity = C.integer({ min: 1, max: 1000 });
-      let unit_price;
-      if (
-        (direction == storeOrderDirections.INBOUND &&
-         type == storeOrderTypes.MATERIAL) ||
-        (direction === storeOrderDirections.OUTBOUND &&
-         type == storeOrderTypes.PRODUCT)
-      ) {
-        unit_price = C.integer({ min: 1, max: 1000 });
-
-      }
+      let unit_price = C.integer({ min: 1, max: 1000 });
       let invoice;
       if (direction == storeOrderDirections.INBOUND &&
-          type == storeOrderTypes.MATERIAL) {
+          storeSubject.type == STORE_SUBJECT_TYPES.MATERIAL) {
         invoice = C.pick(invoices.filter(function (it) {
           return it.invoiceType.name == '进项增值税';
         }));
       }
       if (direction === storeOrderDirections.OUTBOUND &&
-          type == storeOrderTypes.PRODUCT) {
+          storeSubject.type == STORE_SUBJECT_TYPES.PRODUCT) {
         invoice = C.pick(invoices.filter(function (it) {
           return it.invoiceType.name == '销项增值税';
         }));
       }
+      let date = C.date({ year: 2016, month: C.pickone([3, 4, 5, 6, 7, 8]) });
+      let [{ id: account_term_id }] = accountTerms.filter(
+        it => it.name == moment(date).format('YYYY-MM')
+      );
       return {
         store_subject_id: C.pickone(storeSubjects).id,
         quantity,
         unit_price,
         direction,
-        type,
-        created: C.date({ year: 2016, month: C.pickone([5, 6, 7, 8]) }),
-        tenant_id: C.pickone(tenants).id,
+        date,
+        account_term_id,
+        department_id: C.pickone(departments).id,
         invoice_id: invoice && invoice.id,
       };
     });

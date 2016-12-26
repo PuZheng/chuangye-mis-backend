@@ -74,6 +74,9 @@ var stylize = function (part, style) {
     if (cell === void 0) {
       cell = {};
     }
+    if (typeof cell == 'string') {
+      cell = { val: cell };
+    }
     if (cell.style == void 0) {
       cell.style = {};
     }
@@ -93,8 +96,37 @@ var groupNameCell = function (s) {
   };
 };
 
-var readonly = s => ({ val: s, readonly: true });
+var readonly = function (cell) {
+  if (typeof cell == 'number') {
+    cell = String(cell);
+  }
+  if (typeof cell == 'string') {
+    return {
+      val: cell,
+      readonly: true
+    };
+  }
+  return Object.assign(cell, {readonly: true});
+};
 
+// give cell definition a unique label
+var labelize = function () {
+  let uuid = 1;
+  return function (cell) {
+    if (typeof cell == 'number') {
+      cell = String(cell);
+    }
+    let label = String(uuid++);
+    if (typeof cell == 'string') {
+      return {
+        val: cell,
+        label,
+      };
+    } else {
+      return Object.assign(cell , { label });
+    }
+  };
+}();
 
 var searchCells = function searchCell(fragment, test) {
   return R.flatten(
@@ -278,6 +310,7 @@ var 电表Fragment = function ({
     let 实际度数Cell = {
       val: '=@{' + ns + '电表总计度数}',
       readonly: true,
+      format: '%.2f',
     };
     let 上浮单价Cell = {
       val: settings.上浮单价,
@@ -308,6 +341,7 @@ var 电表Fragment = function ({
     let 实际度数Cell = {
       val: `=@{${ns}电表总计度数}`,
       readonly: true,
+      format: '%.2f',
     };
     let 线损单价Cell = {
       /* eslint-disable max-len */
@@ -341,6 +375,7 @@ var 电表Fragment = function ({
     let 实际度数Cell = {
       val: `=@{${ns}电表总计度数}`,
       readonly: true,
+      format: '%.2f',
     };
     let 单价Cell = {
       /* eslint-disable max-len */
@@ -633,15 +668,121 @@ var 蒸汽表Fragment = function ({
   ];
 };
 
-var 总结Fragment = function () {
+let 原材料Fragment = function (storeOrders) {
+  if (storeOrders.length == 0) {
+    return [];
+  }
+  let ns = '原材料-';
+  let headerRow = function () {
+    /* eslint-disable max-len */
+    return [header('名称'), header('数量'), header('单位'), header('单价'), header('总价'), header('可抵税额')];
+    /* eslint-enable max-len */
+  }();
+  let dataRows = R.toPairs(R.groupBy(so => so.storeSubject.name)(storeOrders))
+  .map(
+    function ([storeSubjectName, group]) {
+      let storeSubject = group[0].storeSubject;
+      let nameCell = readonly(storeSubjectName);
+      let quantityCell = readonly(labelize(
+        R.sum(group.map(R.prop('quantity')))
+      ));
+      let unitCell = readonly(storeSubject.unit);
+      let unitPriceCell = readonly(labelize(group[0].unitPrice));
+      let sumCell = readonly(labelize({
+        val: `=@{${quantityCell.label}}*@{${unitPriceCell.label}}`,
+        format: '%.2f',
+        data: { tag: 'sum' },
+      }));
+      let 可抵税额Cell = readonly(labelize({
+        val: `=@{${sumCell.label}}`,
+        format: '%.2f',
+        data: { tag: '可抵税额' },
+      }));
+      /* eslint-disable max-len */
+      return [nameCell, quantityCell, unitCell, unitPriceCell, sumCell, 可抵税额Cell];
+      /* eslint-enable max-len */
+    }
+  );
+  let summaryRow = function () {
+    let sumCell = {
+      readonly: true,
+      val: '=' + searchCells(dataRows, R.pathEq(['data', 'tag'], 'sum')).map(
+        ({ label }) => '@{' + label + '}'
+      ).join('+'),
+      format: '%.2f',
+      label: ns + '总金额',
+    };
+    let 可抵税额Cell = {
+      readonly: true,
+      val: '=' + searchCells(dataRows, R.pathEq(['data', 'tag'], '可抵税额')).map(
+        ({ label }) => '@{' + label + '}'
+      ).join('+'),
+      format: '%.2f',
+      label: ns + '总可抵税额',
+    };
+    return stylize([header('总结'), '', '', '', sumCell, 可抵税额Cell], {
+      fontWeight: 700
+    });
+  }();
+  return [
+    headerRow,
+    ...dataRows,
+    summaryRow,
+  ];
+};
+
+let 氰化钠分摊Fragment = function (storeOrders, settings) {
+  let ns = '氰化钠分摊-';
+  storeOrders = storeOrders.filter(so => so.storeSubject.name == '氰化钠');
+  if (storeOrders.length == 0) {
+    return [];
+  }
+  let quantityCell = readonly(labelize(
+    R.sum(storeOrders.map(R.prop('quantity')))
+  ));
+  let unitPriceCell = readonly(labelize(
+    settings.氰化钠分摊单价
+  ));
+  let sumCell = {
+    label: ns + '总金额',
+    val: `=@{${quantityCell.label}} * @{${unitPriceCell.label}}`,
+    readonly: true,
+  };
+  let 可抵税额Cell = {
+    readonly: true,
+    label: ns + '总可抵税额',
+    /* eslint-disable max-len */
+    val: `=@{${sumCell.label}}*@{${TAX_RATE_CELL_LABEL}}/(1 + @{${TAX_RATE_CELL_LABEL}})`,
+    /* eslint-enable max-len */
+    format: '%.2f',
+  };
+  let headerRow = [
+    header('数量'), header('单价'), header('总价'), header('可抵税额')
+  ];
+  return [
+    headerRow,
+    [quantityCell, unitPriceCell, sumCell, 可抵税额Cell],
+  ];
+};
+
+var 总结Fragment = function (storeOrders) {
+  let parts = ['电表', '水表', '生活水表', '蒸汽表'];
+  if (storeOrders.length) {
+    parts.push('原材料');
+  }
+  if (storeOrders.some(so => so.storeSubject.name == '氰化钠')) {
+    parts.push('氰化钠分摊');
+  }
   let 总金额Cell = {
-    val: '=' + ['电表', '水表', '生活水表', '蒸汽表'].map(it => '@{' + it + '-总金额}')
+    val: '=' + parts.map(it => '@{' + it + '-总金额}')
     .join('+'),
     readonly: true,
     format: '%.2f',
   };
   let 可抵税额Cell = {
-    val: '=' + ['电表', '水表', '生活水表', '蒸汽表'].map(it => '@{' + it + '-总可抵税额}')
+    val: '=' + parts.map(
+      it => '@{' + it + '-总可抵税额}'
+    )
     .join('+'),
     format: '%.2f',
     readonly: true,
@@ -654,7 +795,7 @@ var 总结Fragment = function () {
 
 module.exports = function departmentChargeBillGrid({
   meterTypes, totalElectricConsumption, totalElectricFee,
-  settings
+  settings, storeOrders
 }) {
   var taxRateCell = {
     val: settings.增值税率,
@@ -663,6 +804,8 @@ module.exports = function departmentChargeBillGrid({
   };
   return [[readonly('公司税率'), taxRateCell]].concat(
     [
+      ['原材料费用', 'lightslategray', 原材料Fragment(storeOrders)],
+      ['氰化钠分摊', 'steelblue', 氰化钠分摊Fragment(storeOrders, settings)],
       ['电表费用', 'red', 电表Fragment({
         meterTypeData: R.find(R.propEq('name', METER_TYPES.电表))(meterTypes),
         totalConsumption: totalElectricConsumption,
@@ -683,9 +826,12 @@ module.exports = function departmentChargeBillGrid({
         meterTypeData: R.find(R.propEq('name', METER_TYPES.蒸汽表))(meterTypes),
         settings
       })],
-      ['总结', 'wheat', 总结Fragment()],
+      ['总结', 'wheat', 总结Fragment(storeOrders)],
     ]
     .map(function ([title, color, fragment]) {
+      if (fragment.length == 0) {
+        return [];
+      }
       return border(
         addFragmentHeaderRow(fragment, title, {
           color: 'white',

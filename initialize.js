@@ -4,7 +4,7 @@ var logger = require('./logger');
 var roles = require('./const').roles;
 var knex = require('./knex');
 var co = require('co');
-var { entityTypes, storeOrderTypes, storeOrderDirections, voucherSubjects,
+var { entityTypes, STORE_SUBJECT_TYPES, storeOrderDirections, voucherSubjects,
   voucherTypes } = require('./const');
 var settingGroups = require('./const').settingGroups;
 var R = require('ramda');
@@ -65,7 +65,7 @@ var createInvoiceTypes = function (trx) {
         vendor_type: entityTypes.SUPPLIER,
         purchaser_type: entityTypes.TENANT,
         is_vat: true,
-        store_order_type: storeOrderTypes.MATERIAL,
+        store_order_type: STORE_SUBJECT_TYPES.MATERIAL,
         store_order_direction: storeOrderDirections.INBOUND,
         related_voucher_subject_id: voucher_subject_id1,
       }, {
@@ -73,7 +73,7 @@ var createInvoiceTypes = function (trx) {
         vendor_type: entityTypes.TENANT,
         purchaser_type: entityTypes.CUSTOMER,
         is_vat: true,
-        store_order_type: storeOrderTypes.PRODUCT,
+        store_order_type: STORE_SUBJECT_TYPES.PRODUCT,
         store_order_direction: storeOrderDirections.OUTBOUND,
         related_voucher_subject_id: voucher_subject_id2,
       }, {
@@ -142,30 +142,30 @@ var createMeterReadingTypes = function *(trx) {
 var createSettings = function (trx) {
   var rows = [
     // 一般
-    { name: '上浮单价', value: '0.2' },
-    { name: '增值税率', value: '0.17', group: settingGroups.增值税率 },
+    [ '上浮单价', '0.2' ],
+    [ '增值税率', '0.17', '', settingGroups.增值税率 ],
     // power
-    { name: '尖峰电价', value: '1.123', comment: '元/度', group: settingGroups.电费},
-    { name: '低谷电价', value: '0.457', comment: '元/度', group: settingGroups.电费},
-    { name: '高峰电价', value: '0.941', comment: '元/度', group: settingGroups.电费},
-    { name: '基本电费每KV', value: '30', comment: '元/KV', group: settingGroups.电费},
-    { name: '线损率', value: '6', comment: '百分比', group: settingGroups.电费},
-    { name: '变压器容量', value: '5200', comment: 'KV', group: settingGroups.电费},
+    [ '尖峰电价', '1.123', '元/度', settingGroups.电费],
+    [ '低谷电价', '0.457', '元/度', settingGroups.电费],
+    [ '高峰电价', '0.941', '元/度', settingGroups.电费],
+    [ '基本电费每KV', '30', '元/KV', settingGroups.电费],
+    [ '线损率', '6', '百分比', settingGroups.电费],
+    [ '变压器容量', '5200', 'KV', settingGroups.电费],
     // water
-    { name: '工业水价', value: '3.3', comment: '元/吨', group: settingGroups.水费 },
-    { name: '生活水价', value: '6.92', comment: '元/吨', group: settingGroups.水费 },
-    { name: '污水治理价格', value: '41.0', comment: '元/吨', group: settingGroups.水费 },
-    {
-      name: '治理税可地税部分', value: '41.0', comment: '元/吨', group: settingGroups.水费
-    },
-    { name: '污泥费价格', value: '0.71', comment: '元/吨', group: settingGroups.水费 },
+    [ '工业水价', '3.3', '元/吨', settingGroups.水费 ],
+    [ '生活水价', '6.92', '元/吨', settingGroups.水费 ],
+    [ '污水治理价格', '41.0', '元/吨', settingGroups.水费 ],
+    [ '治理税可地税部分', '41.0', '元/吨', settingGroups.水费 ],
+    [ '污泥费价格', '0.71', '元/吨', settingGroups.水费 ],
     // 蒸汽费用
-    { name: '蒸汽价', value: '261.8', comment: '元/吨',  group: settingGroups.蒸汽费 },
-    { name: '线损蒸汽价', value: '226.8', comment: '元/吨', group: settingGroups.蒸汽费 },
-    { name: '蒸汽线损', value: '7', comment: '元/吨', group: settingGroups.蒸汽费 },
+    [ '蒸汽价', '261.8', '元/吨',  settingGroups.蒸汽费 ],
+    [ '线损蒸汽价', '226.8', '元/吨', settingGroups.蒸汽费 ],
+    [ '蒸汽线损', '7', '元/吨', settingGroups.蒸汽费 ],
     // 氰化钠
-    { name: '氰化钠分摊', value: '680', comment: '元/吨', group: settingGroups.氰化钠分摊 },
-  ];
+    [ '氰化钠分摊单价', '680', '元/吨', settingGroups.氰化钠分摊 ],
+  ].map(function ([name, value, comment, group]) {
+    return { name, value, comment, group };
+  });
   return trx.batchInsert('settings', rows);
 };
 
@@ -178,6 +178,12 @@ knex.transaction(function (trx) {
     yield createMeterTypes(trx);
     yield createSettings(trx);
     yield * createMeterReadingTypes(trx);
+    yield trx.insert({
+      name: '氰化钠',
+      unit: 'kg',
+      acronym: 'qhn',
+      type: STORE_SUBJECT_TYPES.MATERIAL,
+    }).into('store_subjects');
   });
 })
 .then(function () {
