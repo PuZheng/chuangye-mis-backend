@@ -652,6 +652,17 @@ var 总结Fragment = function () {
   ], { fontWeight: 700 });
 };
 
+let 原材料Fragment = function () {
+  let headerRow = function () {
+    /* eslint-disable max-len */
+    return [header('名称'), header('重量'), header('单价'), header('总价'), header('可抵税额')];
+    /* eslint-enable max-len */
+  }();
+  return [
+    headerRow,
+  ];
+};
+
 module.exports = function departmentChargeBillGrid({
   meterTypes, totalElectricConsumption, totalElectricFee,
   settings
@@ -663,6 +674,9 @@ module.exports = function departmentChargeBillGrid({
   };
   return [[readonly('公司税率'), taxRateCell]].concat(
     [
+      ['原材料费用', 'lightslategray', 原材料Fragment({
+
+      })],
       ['电表费用', 'red', 电表Fragment({
         meterTypeData: R.find(R.propEq('name', METER_TYPES.电表))(meterTypes),
         totalConsumption: totalElectricConsumption,

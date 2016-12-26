@@ -25,16 +25,7 @@ var makeStoreOrders = function () {
       let direction = C.pickone(R.values(storeOrderDirections));
       let type = C.pickone(R.values(storeOrderTypes));
       let quantity = C.integer({ min: 1, max: 1000 });
-      let unit_price;
-      if (
-        (direction == storeOrderDirections.INBOUND &&
-         type == storeOrderTypes.MATERIAL) ||
-        (direction === storeOrderDirections.OUTBOUND &&
-         type == storeOrderTypes.PRODUCT)
-      ) {
-        unit_price = C.integer({ min: 1, max: 1000 });
-
-      }
+      let unit_price = C.integer({ min: 1, max: 1000 });
       let invoice;
       if (direction == storeOrderDirections.INBOUND &&
           type == storeOrderTypes.MATERIAL) {
