@@ -601,6 +601,7 @@ var 蒸汽表Fragment = function ({
       .join('+') + `)*@{${蒸汽线损Cell.label}}`,
       readonly: true,
       label: ns + '实际度数',
+      format: '%.2f',
     };
     let 单价Cell = {
       val: settings.线损蒸汽价,
@@ -694,7 +695,9 @@ let 原材料Fragment = function (storeOrders) {
         data: { tag: 'sum' },
       }));
       let 可抵税额Cell = readonly(labelize({
-        val: `=@{${sumCell.label}}`,
+        /* eslint-disable max-len */
+        val: `=@{${sumCell.label}}*@{${TAX_RATE_CELL_LABEL}}/(1 + @{${TAX_RATE_CELL_LABEL}})`,
+        /* eslint-enable max-len */
         format: '%.2f',
         data: { tag: '可抵税额' },
       }));
@@ -751,10 +754,7 @@ let 氰化钠分摊Fragment = function (storeOrders, settings) {
   let 可抵税额Cell = {
     readonly: true,
     label: ns + '总可抵税额',
-    /* eslint-disable max-len */
-    val: `=@{${sumCell.label}}*@{${TAX_RATE_CELL_LABEL}}/(1 + @{${TAX_RATE_CELL_LABEL}})`,
-    /* eslint-enable max-len */
-    format: '%.2f',
+    val: '0',
   };
   let headerRow = [
     header('数量'), header('单价'), header('总价'), header('可抵税额')
