@@ -838,7 +838,7 @@ module.exports = function departmentChargeBillGrid({
           backgroundColor: color
         }),
         color
-      );
+      ).concat([['']]);
     })
     .reduce(R.concat, [])
   );
