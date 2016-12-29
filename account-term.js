@@ -11,7 +11,7 @@ var {
   voucher_types: voucherTypeDef
 } = require('./models');
 var co = require('co');
-var { invoiceActions, entityTypes } = require('./const');
+var { INVOICE_ACTIONS, ENTITY_TYPES } = require('./const');
 var { sm } = require('./invoice');
 var layerify = require('./utils/layerify');
 var moment = require('moment');
@@ -156,12 +156,12 @@ router.post(
           .select('*');
           for (let invoice of invoices) {
             if (~sm.state(invoice.status).actions
-                .indexOf(invoiceActions.AUTHENTICATE)) {
-              yield sm.perform(invoiceActions.AUTHENTICATE, invoice.id);
+                .indexOf(INVOICE_ACTIONS.AUTHENTICATE)) {
+              yield sm.perform(INVOICE_ACTIONS.AUTHENTICATE, invoice.id);
             }
           }
           let entities = yield trx('entities')
-          .where({ type: entityTypes.TENANT }).select('*');
+          .where({ type: ENTITY_TYPES.TENANT }).select('*');
           // 为每个承包人生成账簿, 并更新累计收入/支出
           for (let entity of entities) {
             let [account] = yield knex('accounts').where('entity_id', entity.id)

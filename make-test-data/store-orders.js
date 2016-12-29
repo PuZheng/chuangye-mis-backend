@@ -4,7 +4,7 @@ var logger = require('../logger');
 var Chance = require('chance');
 var C = new Chance();
 var R = require('ramda');
-var { STORE_SUBJECT_TYPES, storeOrderDirections } = require('../const');
+var { STORE_SUBJECT_TYPES, STORE_ORDER_DIRECTIONS } = require('../const');
 var co = require('co');
 var casing = require('casing');
 var moment = require('moment');
@@ -25,17 +25,17 @@ var makeStoreOrders = function () {
     let accountTerms = yield knex('account_terms').select('*');
     let rows = R.range(0, 500).map(function () {
       let storeSubject = C.pickone(storeSubjects);
-      let direction = C.pickone(R.values(storeOrderDirections));
+      let direction = C.pickone(R.values(STORE_ORDER_DIRECTIONS));
       let quantity = C.integer({ min: 1, max: 1000 });
       let unit_price = C.integer({ min: 1, max: 1000 });
       let invoice;
-      if (direction == storeOrderDirections.INBOUND &&
+      if (direction == STORE_ORDER_DIRECTIONS.INBOUND &&
           storeSubject.type == STORE_SUBJECT_TYPES.MATERIAL) {
         invoice = C.pick(invoices.filter(function (it) {
           return it.invoiceType.name == '进项增值税';
         }));
       }
-      if (direction === storeOrderDirections.OUTBOUND &&
+      if (direction === STORE_ORDER_DIRECTIONS.OUTBOUND &&
           storeSubject.type == STORE_SUBJECT_TYPES.PRODUCT) {
         invoice = C.pick(invoices.filter(function (it) {
           return it.invoiceType.name == '销项增值税';

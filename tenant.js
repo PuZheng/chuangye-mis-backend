@@ -6,7 +6,7 @@ var co = require('co');
 var casing = require('casing');
 var getEntity = require('./entity').getObject;
 var getDepartment = require('./department').getObject;
-var entityTypes = require('./const').entityTypes;
+var { ENTITY_TYPES } = require('./const');
 var R = require('ramda');
 
 var router = new Router();
@@ -142,7 +142,7 @@ var create = function (req, res, next) {
       let [entity_id] = yield trx.insert({
         name,
         acronym,
-        type: entityTypes.TENANT,
+        type: ENTITY_TYPES.TENANT,
       })
       .into('entities')
       .returning('id');

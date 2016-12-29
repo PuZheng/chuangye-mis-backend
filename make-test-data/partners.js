@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 var logger = require('../logger');
 var knex = require('../knex');
-var entityTypes = require('../const').entityTypes;
+var { ENTITY_TYPES } = require('../const');
 var co = require('co');
 var chance = require('chance');
 
@@ -10,8 +10,8 @@ var C = new chance();
 if (require.main === module) {
   co(function *() {
     try {
-      let entities = yield knex('entities').where('type', entityTypes.CUSTOMER)
-      .orWhere('type', entityTypes.SUPPLIER);
+      let entities = yield knex('entities').where('type', ENTITY_TYPES.CUSTOMER)
+      .orWhere('type', ENTITY_TYPES.SUPPLIER);
       let rows = entities.map(function (it) {
         return {
           entity_id: it.id,

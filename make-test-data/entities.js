@@ -1,32 +1,32 @@
 #! /usr/bin/env node
 var logger = require('../logger');
 var knex = require('../knex');
-var entityTypes = require('../const').entityTypes;
+var { ENTITY_TYPES } = require('../const');
 var co = require('co');
 var R = require('ramda');
 var {sprintf} = require('sprintf-js');
 
 var makeEntities = function () {
   var entities = [
-    { name: '业主', acronym: 'yz', type: entityTypes.OWNER },
-    { name: '客户1', acronym: 'kh1', type: entityTypes.CUSTOMER },
-    { name: '客户2', acronym: 'kh2', type: entityTypes.CUSTOMER },
-    { name: '客户3', acronym: 'kh3', type: entityTypes.CUSTOMER },
-    { name: '供应商1', acronym: 'gys1', type: entityTypes.SUPPLIER },
-    { name: '供应商2', acronym: 'gys2', type: entityTypes.SUPPLIER },
+    { name: '业主', acronym: 'yz', type: ENTITY_TYPES.OWNER },
+    { name: '客户1', acronym: 'kh1', type: ENTITY_TYPES.CUSTOMER },
+    { name: '客户2', acronym: 'kh2', type: ENTITY_TYPES.CUSTOMER },
+    { name: '客户3', acronym: 'kh3', type: ENTITY_TYPES.CUSTOMER },
+    { name: '供应商1', acronym: 'gys1', type: ENTITY_TYPES.SUPPLIER },
+    { name: '供应商2', acronym: 'gys2', type: ENTITY_TYPES.SUPPLIER },
   ];
   return knex.batchInsert('entities', entities);
 };
 
 var makeOwner = function makeOwner(trx) {
-  return trx.insert({ name: '业主', acronym: 'yz', type: entityTypes.OWNER })
+  return trx.insert({ name: '业主', acronym: 'yz', type: ENTITY_TYPES.OWNER })
   .into('entities');
 };
 
 var makeCustomers = function makeCustomers(trx) {
   return trx.batchInsert('entities', R.range(1, 3001).map(function (n) {
     n = sprintf('%04d', n);
-    return { name: '客户' + n, acronym: 'kh' + n, type: entityTypes.CUSTOMER };
+    return { name: '客户' + n, acronym: 'kh' + n, type: ENTITY_TYPES.CUSTOMER };
   }));
 };
 
@@ -35,7 +35,7 @@ var makeSuppliers = function makeSuppliers(trx) {
     return {
       name: '供应商' + n,
       acronym: 'gys' + n,
-      type: entityTypes.SUPPLIER
+      type: ENTITY_TYPES.SUPPLIER
     };
   }));
 };

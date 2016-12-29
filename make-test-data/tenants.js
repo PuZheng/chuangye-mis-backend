@@ -5,7 +5,7 @@ var co = require('co');
 var pinyin = require('pinyin');
 var Chance = require('chance');
 var R = require('ramda');
-var entityTypes = require('../const').entityTypes;
+var { ENTITY_TYPES } = require('../const');
 
 var chance = new Chance();
 
@@ -39,7 +39,7 @@ var makeTenants = function () {
         return {
           name,
           acronym,
-          type: entityTypes.TENANT,
+          type: ENTITY_TYPES.TENANT,
         };
       }
     );

@@ -1,9 +1,9 @@
-var roles = require('./const').roles;
-exports[roles.ACCOUNTANT] = new Set([
+var { ROLES } = require('./const');
+exports[ROLES.ACCOUNTANT] = new Set([
   'view.invoice.list',
   'edit.invoice.object',
 ]);
-exports[roles.CASHIER] = new Set([
+exports[ROLES.CASHIER] = new Set([
   'view.voucher.list',
   'view.voucher.object',
   'edit.voucher.object',
@@ -14,7 +14,7 @@ exports[roles.CASHIER] = new Set([
   'view.tenant.list',
   'edit.tenant.object',
 ]);
-exports[roles.ADMIN] = new Set([
+exports[ROLES.ADMIN] = new Set([
   'edit.department',
   'edit.settings',
   'edit.meter',

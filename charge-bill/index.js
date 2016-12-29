@@ -6,7 +6,7 @@ var co = require('co');
 var casing = require('casing');
 var R = require('ramda');
 var departmentChargeBillGrid = require('./department-charge-bill-grid');
-var { METER_TYPES, storeOrderDirections, STORE_SUBJECT_TYPES } =
+var { METER_TYPES, STORE_ORDER_DIRECTIONS, STORE_SUBJECT_TYPES } =
   require('../const');
 var chargeBillDef = require('./charge-bill-def');
 var logger = require('../logger');
@@ -169,7 +169,7 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
   .then(casing.camelize);
   let storeOrders = yield knex('store_orders')
   .where('account_term_id', accountTermId)
-  .where('direction', storeOrderDirections.OUTBOUND)
+  .where('direction', STORE_ORDER_DIRECTIONS.OUTBOUND)
   .where('store_subjects.type', STORE_SUBJECT_TYPES.MATERIAL)
   .join('store_subjects', 'store_subjects.id', 'store_orders.store_subject_id')
   .select([

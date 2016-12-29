@@ -1,14 +1,13 @@
 #! /usr/bin/env node
 var config = require('./config');
 var logger = require('./logger');
-var roles = require('./const').roles;
 var knex = require('./knex');
 var co = require('co');
-var { entityTypes, STORE_SUBJECT_TYPES, storeOrderDirections, voucherSubjects,
-  voucherTypes } = require('./const');
-var settingGroups = require('./const').settingGroups;
+var {
+  ROLES, ENTITY_TYPES, STORE_SUBJECT_TYPES, STORE_ORDER_DIRECTIONS,
+  VOUCHER_SUBJECTS, VOUCHER_TYPES, SETTING_GROUPS, METER_TYPES
+} = require('./const');
 var R = require('ramda');
-var { METER_TYPES } = require('./const');
 
 var admin = config.get('admin');
 
@@ -21,27 +20,27 @@ var createAdmin = function (trx) {
     {
       username: admin.username,
       password: admin.password,
-      role: roles.ADMIN
+      role: ROLES.ADMIN
     }
   );
 };
 
 var createVoucherTypes = function (trx) {
   return trx.into('voucher_types').insert([{
-    name: voucherTypes.CASH,
+    name: VOUCHER_TYPES.CASH,
   }, {
-    name: voucherTypes.BANK_VOUCHER,
+    name: VOUCHER_TYPES.BANK_VOUCHER,
   }]);
 };
 
 var createVoucherSubjects = function (trx) {
   return trx.batchInsert('voucher_subjects', [
-    [voucherSubjects.PRESET_EXPENSE, 'xtyszc', entityTypes.TENANT, null, true,
+    [VOUCHER_SUBJECTS.PRESET_EXPENSE, 'xtyszc', ENTITY_TYPES.TENANT, null, true,
       '用于初始化账户时，预设的当月支出'],
-    [voucherSubjects.PRESET_INCOME, 'xtyszc', null, entityTypes.TENANT, true,
+    [VOUCHER_SUBJECTS.PRESET_INCOME, 'xtyszc', null, ENTITY_TYPES.TENANT, true,
       '用于初始化账户时，预设的当月收入'],
-    [ '应收货款', 'yshk', entityTypes.CUSTOMER, entityTypes.TENANT, true ],
-    [ '应付货款', 'yfhk', entityTypes.TENANT, entityTypes.SUPPLIER, true ],
+    [ '应收货款', 'yshk', ENTITY_TYPES.CUSTOMER, ENTITY_TYPES.TENANT, true ],
+    [ '应付货款', 'yfhk', ENTITY_TYPES.TENANT, ENTITY_TYPES.SUPPLIER, true ],
   ].map(function (
     [name, acronym, payer_type, recipient_type, is_public, notes]
   ) {
@@ -62,23 +61,23 @@ var createInvoiceTypes = function (trx) {
     let rows = [
       {
         name: '进项增值税',
-        vendor_type: entityTypes.SUPPLIER,
-        purchaser_type: entityTypes.TENANT,
+        vendor_type: ENTITY_TYPES.SUPPLIER,
+        purchaser_type: ENTITY_TYPES.TENANT,
         is_vat: true,
-        store_order_type: STORE_SUBJECT_TYPES.MATERIAL,
-        store_order_direction: storeOrderDirections.INBOUND,
+        store_subject_type: STORE_SUBJECT_TYPES.MATERIAL,
+        store_order_direction: STORE_ORDER_DIRECTIONS.INBOUND,
         related_voucher_subject_id: voucher_subject_id1,
       }, {
         name: '销项增值税',
-        vendor_type: entityTypes.TENANT,
-        purchaser_type: entityTypes.CUSTOMER,
+        vendor_type: ENTITY_TYPES.TENANT,
+        purchaser_type: ENTITY_TYPES.CUSTOMER,
         is_vat: true,
-        store_order_type: STORE_SUBJECT_TYPES.PRODUCT,
-        store_order_direction: storeOrderDirections.OUTBOUND,
+        store_subject_type: STORE_SUBJECT_TYPES.PRODUCT,
+        store_order_direction: STORE_ORDER_DIRECTIONS.OUTBOUND,
         related_voucher_subject_id: voucher_subject_id2,
       }, {
         name: '普通发票',
-        purchaser_type: entityTypes.OWNER,
+        purchaser_type: ENTITY_TYPES.OWNER,
         is_vat: false,
       }
     ];
@@ -143,26 +142,26 @@ var createSettings = function (trx) {
   var rows = [
     // 一般
     [ '上浮单价', '0.2' ],
-    [ '增值税率', '0.17', '', settingGroups.增值税率 ],
+    [ '增值税率', '0.17', '', SETTING_GROUPS.增值税率 ],
     // power
-    [ '尖峰电价', '1.123', '元/度', settingGroups.电费],
-    [ '低谷电价', '0.457', '元/度', settingGroups.电费],
-    [ '高峰电价', '0.941', '元/度', settingGroups.电费],
-    [ '基本电费每KV', '30', '元/KV', settingGroups.电费],
-    [ '线损率', '6', '百分比', settingGroups.电费],
-    [ '变压器容量', '5200', 'KV', settingGroups.电费],
+    [ '尖峰电价', '1.123', '元/度', SETTING_GROUPS.电费],
+    [ '低谷电价', '0.457', '元/度', SETTING_GROUPS.电费],
+    [ '高峰电价', '0.941', '元/度', SETTING_GROUPS.电费],
+    [ '基本电费每KV', '30', '元/KV', SETTING_GROUPS.电费],
+    [ '线损率', '6', '百分比', SETTING_GROUPS.电费],
+    [ '变压器容量', '5200', 'KV', SETTING_GROUPS.电费],
     // water
-    [ '工业水价', '3.3', '元/吨', settingGroups.水费 ],
-    [ '生活水价', '6.92', '元/吨', settingGroups.水费 ],
-    [ '污水治理价格', '41.0', '元/吨', settingGroups.水费 ],
-    [ '治理税可地税部分', '41.0', '元/吨', settingGroups.水费 ],
-    [ '污泥费价格', '0.71', '元/吨', settingGroups.水费 ],
+    [ '工业水价', '3.3', '元/吨', SETTING_GROUPS.水费 ],
+    [ '生活水价', '6.92', '元/吨', SETTING_GROUPS.水费 ],
+    [ '污水治理价格', '41.0', '元/吨', SETTING_GROUPS.水费 ],
+    [ '治理税可地税部分', '41.0', '元/吨', SETTING_GROUPS.水费 ],
+    [ '污泥费价格', '0.71', '元/吨', SETTING_GROUPS.水费 ],
     // 蒸汽费用
-    [ '蒸汽价', '261.8', '元/吨',  settingGroups.蒸汽费 ],
-    [ '线损蒸汽价', '226.8', '元/吨', settingGroups.蒸汽费 ],
-    [ '蒸汽线损', '7', '元/吨', settingGroups.蒸汽费 ],
+    [ '蒸汽价', '261.8', '元/吨',  SETTING_GROUPS.蒸汽费 ],
+    [ '线损蒸汽价', '226.8', '元/吨', SETTING_GROUPS.蒸汽费 ],
+    [ '蒸汽线损', '7', '元/吨', SETTING_GROUPS.蒸汽费 ],
     // 氰化钠
-    [ '氰化钠分摊单价', '680', '元/吨', settingGroups.氰化钠分摊 ],
+    [ '氰化钠分摊单价', '680', '元/吨', SETTING_GROUPS.氰化钠分摊 ],
   ].map(function ([name, value, comment, group]) {
     return { name, value, comment, group };
   });

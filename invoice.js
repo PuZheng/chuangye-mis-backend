@@ -14,17 +14,16 @@ var getStoreSubject = require('./store-subject').getObject;
 var getUser = require('./user').getObject;
 var R = require('ramda');
 var StateMachine = require('./lite-sm');
-var invoiceStatus = require('./const').invoiceStatus;
-var invoiceActions = require('./const').invoiceActions;
+var { INVOICE_STATES, INVOICE_ACTIONS } = require('./const');
 
 var sm = new StateMachine();
 
-sm.addState(invoiceStatus.UNAUTHENTICATED, {
-  [invoiceActions.EDIT]: invoiceStatus.UNAUTHENTICATED,
-  [invoiceActions.DELETE]: invoiceStatus.DELETED,
-  [invoiceActions.AUTHENTICATE]: invoiceStatus.AUTHENTICATED,
+sm.addState(INVOICE_STATES.UNAUTHENTICATED, {
+  [INVOICE_ACTIONS.EDIT]: INVOICE_STATES.UNAUTHENTICATED,
+  [INVOICE_ACTIONS.DELETE]: INVOICE_STATES.DELETED,
+  [INVOICE_ACTIONS.AUTHENTICATE]: INVOICE_STATES.AUTHENTICATED,
 }, function (obj) {
-  if (this.action == invoiceActions.EDIT) {
+  if (this.action == INVOICE_ACTIONS.EDIT) {
     return knex.transaction(function (trx) {
       return co(function *() {
         let { storeOrders } = obj;
@@ -43,6 +42,8 @@ sm.addState(invoiceStatus.UNAUTHENTICATED, {
             so.type = invoiceType.storeOrderType;
             so.direction = invoiceType.storeOrderDirection;
             so.invoice_id = obj.id;
+            so.account_term_id = obj.accountTermId;
+            so.date = obj.date;
             yield trx.insert(R.pick(Object.keys(storeOrderDef), so))
             .into('store_orders');
           } else {
@@ -58,8 +59,8 @@ sm.addState(invoiceStatus.UNAUTHENTICATED, {
     });
   }
 })
-.addState(invoiceStatus.AUTHENTICATED, {
-  [invoiceActions.ABORT]: invoiceStatus.ABORTED,
+.addState(INVOICE_STATES.AUTHENTICATED, {
+  [INVOICE_ACTIONS.ABORT]: INVOICE_STATES.ABORTED,
 }, function (id) {
   let actions = this.sm.actions;
   return knex('invoices').update({ status: this.label }).where({ id })
@@ -68,7 +69,7 @@ sm.addState(invoiceStatus.UNAUTHENTICATED, {
     return { status, actions, };
   });
 })
-.addState(invoiceStatus.ABORTED, null, function (id) {
+.addState(INVOICE_STATES.ABORTED, null, function (id) {
   let actions = this.sm.actions;
   return knex('invoices').update({ status: this.label }).where({ id })
   .returning('status')
@@ -76,7 +77,7 @@ sm.addState(invoiceStatus.UNAUTHENTICATED, {
     return { status, actions, };
   });
 })
-.addState(invoiceStatus.DELETED, null, function (obj) {
+.addState(INVOICE_STATES.DELETED, null, function (obj) {
   return knex.transaction(function (trx) {
     return co(function *() {
       yield trx('store_orders').del().where({ invoice_id: obj.id });
@@ -93,22 +94,24 @@ router.post(
         let storeOrders = req.body.storeOrders;
         let data = R.pick(Object.keys(invoiceDef), casing.snakeize(req.body));
         data.creator_id = req.user.id;
-        let [id] = yield trx
+        let [invoice] = yield trx
         .insert(data)
-        .returning('id')
-        .into('invoices');
+        .returning('*')
+        .into('invoices')
+        .then(casing.camelize);
         let [invoiceType] = yield knex('invoice_types')
         .where('id', data.invoice_type_id)
         .select('*')
         .then(casing.camelize);
         for (let so of (storeOrders || [])) {
           so = R.pick(Object.keys(storeOrderDef), casing.snakeize(so));
-          so.type = invoiceType.storeOrderType;
           so.direction = invoiceType.storeOrderDirection;
-          so.invoice_id = id;
+          so.invoice_id = invoice.id;
+          so.date = invoice.date;
+          so.account_term_id = invoice.accountTermId;
           yield trx.insert(so).into('store_orders');
         }
-        res.send({id});
+        res.send(invoice);
         next();
       });
     })
@@ -241,7 +244,7 @@ var update = function (req, res, next) {
   let { id } = req.params;
   return knex('invoices').where({ id }).select('status')
   .then(function ([{ status }]) {
-    return sm.state(status).perform(invoiceActions.EDIT, req.body)
+    return sm.state(status).perform(INVOICE_ACTIONS.EDIT, req.body)
     .then(function () {
       res.json({});
       next();
@@ -295,7 +298,7 @@ var del = function (req, res, next) {
   return knex('invoices').where({ id }).select('*')
   .then(function ([ obj ]) {
     try {
-      return sm.state(obj.status).perform(invoiceActions.DELETE, obj)
+      return sm.state(obj.status).perform(INVOICE_ACTIONS.DELETE, obj)
       .then(function () {
         res.json({});
         next();

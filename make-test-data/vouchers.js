@@ -6,7 +6,7 @@ var Chance = require('chance');
 var moment = require('moment');
 var co = require('co');
 var R = require('ramda');
-var CONST = require('../const');
+var { ROLES } = require('../const');
 
 var chance = new Chance();
 
@@ -18,7 +18,7 @@ co(function *() {
   );
   let entites = casing.camelize(yield knex('entities').select('*'));
   let cashiers = casing.camelize(
-    yield knex('users').where('role', '=', CONST.roles.CASHIER).select('*')
+    yield knex('users').where('role', '=', ROLES.CASHIER).select('*')
   );
   let accountTerms = yield knex('account_terms').select('*');
 

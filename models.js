@@ -1,12 +1,16 @@
 var knex = require('./knex');
-var CONST = require('./const');
+var {
+ ROLES, ENTITY_TYPES, STORE_SUBJECT_TYPES, INVOICE_STATES,
+ STORE_ORDER_DIRECTIONS, METER_STATES
+} =
+  require('./const');
 var R = require('ramda');
 
 exports.users = {
   id: t => t.increments('id'),
   username: t => t.string('username').unique(),
   password: t => t.string('password'),
-  role: t => t.enum('role', R.values(CONST.roles)).notNullable(),
+  role: t => t.enum('role', R.values(ROLES)).notNullable(),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
   enabled: t => t.boolean('enabled').defaultTo(true),
 };
@@ -15,8 +19,8 @@ exports.voucher_subjects = {
   id: t => t.increments(),
   name: t => t.string('name').unique().notNullable(),
   acronym: t => t.string('acronym'),
-  payer_type: t => t.string('payer_type', R.values(CONST.entityTypes)),
-  recipient_type: t => t.string('recipient_type', R.values(CONST.entityTypes)),
+  payer_type: t => t.string('payer_type', R.values(ENTITY_TYPES)),
+  recipient_type: t => t.string('recipient_type', R.values(ENTITY_TYPES)),
   is_public: t => t.boolean('is_public'),
   notes: t => t.string('notes'),
 };
@@ -25,13 +29,14 @@ exports.voucher_subjects = {
 exports.invoice_types = {
   id: t => t.increments('id'),
   name: t => t.string('name').unique().notNullable(),
-  vendor_type: t => t.enum('vendor_type', R.values(CONST.entityTypes)),
-  purchaser_type: t => t.enum('purchaser_type', R.values(CONST.entityTypes)),
+  vendor_type: t => t.enum('vendor_type', R.values(ENTITY_TYPES)),
+  purchaser_type: t => t.enum('purchaser_type', R.values(ENTITY_TYPES)),
   is_vat: t => t.boolean('is_vat'),
-  store_order_type: t => t.enum('store_order_type',
-                                R.values(CONST.STORE_SUBJECT_TYPES)),
+  // 用于从发票直接生成store order
   store_order_direction: t => t.enum('store_order_direction',
-                                    R.values(CONST.storeOrderDirections)),
+                                     R.values(STORE_ORDER_DIRECTIONS)),
+  store_subject_type: t => t.enum('store_subject_type',
+                                  R.values(STORE_SUBJECT_TYPES)),
   // 相关凭证科目， 用于基于发票去生成凭证
   related_voucher_subject_id: t => t.integer('related_voucher_subject_id')
   .references('voucher_subjects.id'),
@@ -47,7 +52,7 @@ exports.account_terms = {
 exports.entities = {
   id: t => t.increments(),
   name: t => t.string('name').unique().notNullable(),
-  type: t => t.enum('type', R.values(CONST.entityTypes)).notNullable(),
+  type: t => t.enum('type', R.values(ENTITY_TYPES)).notNullable(),
   acronym: t => t.string('acronym'),
   created: t => t.timestamp('created').defaultTo(knex.fn.now())
 };
@@ -79,15 +84,17 @@ exports.invoices = {
   creator_id: t => t.integer('creator_id').references('users.id'),
   amount: t => t.integer('amount').notNullable(), // 金额
   tax_rate: t => t.integer('tax_rate'), // 有可能不牵扯到税额
-  status: t => t.string('status').defaultTo(CONST.invoiceStatus.UNAUTHENTICATED)
+  status: t => t.string('status').defaultTo(INVOICE_STATES.UNAUTHENTICATED)
 };
 
+// 仓储科目
 exports.store_subjects = {
   id: t => t.increments(),
   name: t => t.string('name').unique().notNullable(),
   unit: t => t.string('unit', 8).notNullable(),
   acronym: t => t.string('acronym'),
-  type: t => t.enum('type', R.values(CONST.STORE_SUBJECT_TYPES)).notNullable(),
+  // 规定是原材料还是产成品
+  type: t => t.enum('type', R.values(STORE_SUBJECT_TYPES)).notNullable(),
 };
 
 
@@ -135,7 +142,7 @@ exports.store_orders = {
   quantity: t => t.float('quantity'),
   unit_price: t => t.float('unit_price', 2),
   invoice_id: t => t.integer('invoice_id').references('invoices.id'),
-  direction: t => t.enum('direction', R.values(CONST.storeOrderDirections))
+  direction: t => t.enum('direction', R.values(STORE_ORDER_DIRECTIONS))
   .notNullable(),
   department_id: t => t.integer('department_id').references('departments.id'),
   date: t => t.date('date').notNullable(),
@@ -166,8 +173,8 @@ exports.meters = {
   // 倍数
   times: t => t.integer('times').notNullable().defaultTo(1),
   parent_meter_id: t => t.integer('parent_meter_id').references('meters.id'),
-  status: t => t.enum('status', R.values(CONST.meterStatus)).notNullable()
-  .defaultTo(CONST.meterStatus.NORMAL),
+  status: t => t.enum('status', R.values(METER_STATES)).notNullable()
+  .defaultTo(METER_STATES.NORMAL),
   meter_type_id: t => t.integer('meter_type_id').references('meter_types.id'),
 };
 

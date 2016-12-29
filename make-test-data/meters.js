@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 var knex = require('../knex');
 var logger = require('../logger');
-var meterStatus = require('../const').meterStatus;
+var { METER_STATES } = require('../const');
 var co = require('co');
 var R = require('ramda');
 var Chance = require('chance');
@@ -17,7 +17,7 @@ var makeMeters = function *(trx, type) {
     return {
       name: '总' + type + n,
       is_total: true,
-      status: meterStatus.NORMAL,
+      status: METER_STATES.NORMAL,
       meter_type_id
     };
   }));
@@ -37,7 +37,7 @@ var makeMeters = function *(trx, type) {
         is_total: false,
         department_id,
         times: 40,
-        status: meterStatus.NORMAL,
+        status: METER_STATES.NORMAL,
         parent_meter_id: C.pickone(totalMeterIdList),
         meter_type_id
       };

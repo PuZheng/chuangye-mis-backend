@@ -4,7 +4,7 @@ var knex = require('./knex');
 var loginRequired = require('./login-required');
 var co = require('co');
 var moment = require('moment');
-var { voucherSubjects, voucherTypes } = require('./const');
+var { VOUCHER_SUBJECTS, VOUCHER_TYPES } = require('./const');
 
 var router = new Router();
 
@@ -69,14 +69,14 @@ var create = function (req, res, next) {
         next();
       }
       let [voucherSubjectPresetExpense] = yield knex('voucher_subjects')
-      .where('name', voucherSubjects.PRESET_EXPENSE).select('*');
+      .where('name', VOUCHER_SUBJECTS.PRESET_EXPENSE).select('*');
       let [ voucherSubjectPresetIncome ] = yield knex('voucher_subjects')
-      .where('name', voucherSubjects.PRESET_INCOME).select('*');
+      .where('name', VOUCHER_SUBJECTS.PRESET_INCOME).select('*');
       let [ voucherTypeCash ] = yield knex('voucher_types')
-      .where('name', voucherTypes.CASH).select('*');
+      .where('name', VOUCHER_TYPES.CASH).select('*');
       let [ entity ] = yield knex('entities').where('id', entityId).select('*');
       yield trx('vouchers').insert({
-        number: entityId + '-' + voucherSubjects.PRESET_EXPENSE,
+        number: entityId + '-' + VOUCHER_SUBJECTS.PRESET_EXPENSE,
         amount: thisMonthExpense,
         date: new Date(),
         voucher_type_id: voucherTypeCash.id,
@@ -87,7 +87,7 @@ var create = function (req, res, next) {
         account_term_id: accountTerm.id,
       });
       yield trx('vouchers').insert({
-        number: entityId + '-' + voucherSubjects.PRESET_INCOME,
+        number: entityId + '-' + VOUCHER_SUBJECTS.PRESET_INCOME,
         amount: thisMonthIncome,
         date: new Date(),
         voucher_type_id: voucherTypeCash.id,

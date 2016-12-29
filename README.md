@@ -14,7 +14,7 @@ postgresql$ createdb foo_db
 ```
 * if no corresponding system user, create it
 
-> Upon installation Postgres is set up to use ident authentication, which means that it associates Postgres roles with a matching Unix/Linux system account. If a role exists within Postgres, a Unix/Linux username with the same name will be able to sign in as that role.
+> Upon installation Postgres is set up to use ident authentication, which means that it associates Postgres ROLES with a matching Unix/Linux system account. If a role exists within Postgres, a Unix/Linux username with the same name will be able to sign in as that role.
 
 * give the newly create user a password to connect the db
 ```

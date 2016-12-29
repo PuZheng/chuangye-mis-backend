@@ -5,7 +5,7 @@ var R = require('ramda');
 var casing = require('casing');
 var knex = require('../knex');
 var co = require('co');
-var CONST = require('../const');
+var { ROLES } = require('../const');
 
 var makeInvoices = function () {
   let chance = new Chance();
@@ -14,7 +14,7 @@ var makeInvoices = function () {
     let entities = casing.camelize(yield knex('entities').select('*'));
     let accountTerms = casing.camelize(yield knex('account_terms').select('*'));
     let accountants = yield knex('users').select('*')
-    .where('role', CONST.roles.ACCOUNTANT);
+    .where('role', ROLES.ACCOUNTANT);
     let rows = R.range(0, 512).map(function () {
       let invoiceType = chance.pickone(invoiceTypes);
       let accountTerm = chance.pickone(accountTerms);

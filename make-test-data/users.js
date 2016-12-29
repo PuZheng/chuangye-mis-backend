@@ -1,16 +1,16 @@
 #! /usr/bin/env node
 var knex = require('../knex');
-var roles = require('../const').roles;
+var { ROLES } = require('../const');
 var logger = require('../logger.js');
 var R = require('ramda');
 
 var makeUsers = function () {
 
   var users = [
-    ['kj1', 'kj1', roles.ACCOUNTANT],
-    ['kj2', 'kj2', roles.ACCOUNTANT],
-    ['cn1', 'cn1', roles.CASHIER],
-    ['cn2', 'cn2', roles.CASHIER],
+    ['kj1', 'kj1', ROLES.ACCOUNTANT],
+    ['kj2', 'kj2', ROLES.ACCOUNTANT],
+    ['cn1', 'cn1', ROLES.CASHIER],
+    ['cn2', 'cn2', ROLES.CASHIER],
   ];
   return knex('users')
   .insert(R.map(function (a) {
