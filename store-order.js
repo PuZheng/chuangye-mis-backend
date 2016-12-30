@@ -4,36 +4,46 @@ var restify = require('restify');
 var Router = require('restify-router').Router;
 var loginRequired = require('./login-required');
 var knex = require('./knex');
-var moment = require('moment');
 var casing = require('casing');
 var co = require('co');
-var storeOrderDef = require('./models')[TABLE_NAME];
-var storeSubjectDef = require('./models').store_subjects;
+var {
+  [TABLE_NAME]: storeOrderDef,
+  store_subjects: storeSubjectDef,
+  departments: departmentDef,
+  account_terms: accountTermDef
+} = require('./models');
 var layerify = require('./utils/layerify');
 var R = require('ramda');
+var moment = require('moment');
 
 var router = new  Router();
 
 var list = function (req, res, next) {
   return co(function *() {
-    let q = knex(TABLE_NAME);
+    let q = knex(TABLE_NAME)
+    .join(
+      'store_subjects', 'store_subjects.id', 'store_orders.store_subject_id'
+    )
+    .join(
+      'account_terms', 'account_terms.id', 'store_orders.account_term_id'
+    );
+
 
     // filters
     for (
-      let col of ['date_span', 'type', 'direction', 'subject_id', 'tenant_id']
+      let col of [
+        'type', 'direction', 'subject_id', 'department_id',
+        'account_term_id',
+      ]
     ) {
       let v = req.params[col] || '';
       switch (col) {
-      case 'date_span': {
-        let m = v.match(/in_(\d+)_days/);
-        if (m) {
-          let target = moment().subtract(m[1], 'days').toDate();
-          q.where(TABLE_NAME + '.created', '>=', target);
-        }
-        break;
-      }
       case 'subject_id': {
         v && q.where(TABLE_NAME + '.store_subject_id', v);
+        break;
+      }
+      case 'type': {
+        v && q.where('store_subjects.type', v);
         break;
       }
       default:
@@ -66,11 +76,9 @@ var list = function (req, res, next) {
     }
 
     let data = yield q
-    .join('store_subjects', 'store_subjects.id',
-          'store_orders.store_subject_id')
     .leftOuterJoin('invoices', 'invoices.id', 'store_orders.invoice_id')
-    .leftOuterJoin('tenants', 'tenants.id', 'store_orders.tenant_id')
-    .join('entities', 'entities.id', 'tenants.entity_id')
+    .leftOuterJoin('departments', 'departments.id',
+                   'store_orders.department_id')
     .select([
       ...Object.keys(storeOrderDef)
       .map(function (col) {
@@ -80,10 +88,12 @@ var list = function (req, res, next) {
       .map(function (col) {
         return 'store_subjects.' + col + ' as store_subject__' + col;
       }),
+      ...Object.keys(accountTermDef)
+      .map(it => `account_terms.${it} as account_term__${it}`),
       'invoices.id as invoice__id',
       'invoices.number as invoice__number',
-      'tenants.id as tenant__id',
-      'entities.name as tenant__entity__name',
+      ...Object.keys(departmentDef)
+      .map(it => `departments.${it} as department__${it}`)
     ])
     .then(function (data) {
       return data.map(function (record) {
@@ -109,13 +119,15 @@ var list = function (req, res, next) {
 router.get('/list', loginRequired, restify.queryParser(), list);
 
 var create = function (req, res, next) {
-  return knex('store_orders')
-  .insert(R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body)))
-  .returning('id')
-  .then(function ([id]) {
-    res.json({
-      id
-    });
+  return co(function *() {
+    let data = R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body));
+    let [ {id: account_term_id} ] = yield knex('account_terms')
+    .where('name', moment(data.date).format('YYYY-MM')).select('id');
+    data.account_term_id = account_term_id;
+    let [id] = yield knex('store_orders')
+    .insert(data)
+    .returning('id');
+    res.json({ id });
     next();
   })
   .catch(function (err) {
