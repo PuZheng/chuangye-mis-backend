@@ -68,6 +68,11 @@ exports.VOUCHER_TYPES = {
   BANK_VOUCHER: '银行凭证'
 };
 
+exports.PAYMENT_RECORD_TYPES = {
+  原材料费用: '原材料费用',
+  水电煤气: '水电煤气',
+};
+
 var Router = require('restify-router').Router;
 var loginRequired = require('./login-required');
 var router = new Router();
