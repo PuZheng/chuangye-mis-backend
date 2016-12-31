@@ -54,6 +54,7 @@ var makeStoreOrders = function () {
         account_term_id,
         department_id: C.pickone(departments).id,
         invoice_id: invoice && invoice.id,
+        number: C.string({ pool: '1234567890' }),
       };
     });
     yield knex.batchInsert('store_orders', rows);

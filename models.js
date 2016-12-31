@@ -137,6 +137,7 @@ exports.tenants = {
 
 exports.store_orders = {
   id: t => t.increments(),
+  number: t => t.string('number').notNullable().unique(),
   store_subject_id: t => t.integer('store_subject_id')
   .references('store_subjects.id'),
   quantity: t => t.float('quantity'),

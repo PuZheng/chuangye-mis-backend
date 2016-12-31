@@ -33,7 +33,7 @@ var list = function (req, res, next) {
     for (
       let col of [
         'type', 'direction', 'subject_id', 'department_id',
-        'account_term_id',
+        'account_term_id', 'number__like'
       ]
     ) {
       let v = req.params[col] || '';
@@ -44,6 +44,11 @@ var list = function (req, res, next) {
       }
       case 'type': {
         v && q.where('store_subjects.type', v);
+        break;
+      }
+      case 'number__like': {
+        v && q.whereRaw('UPPER(store_orders.number) like ?',
+                        v.toUpperCase() + '%');
         break;
       }
       default:
@@ -121,6 +126,7 @@ router.get('/list', loginRequired, restify.queryParser(), list);
 var create = function (req, res, next) {
   return co(function *() {
     let data = R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body));
+    console.log(data);
     let [ {id: account_term_id} ] = yield knex('account_terms')
     .where('name', moment(data.date).format('YYYY-MM')).select('id');
     data.account_term_id = account_term_id;
@@ -142,6 +148,7 @@ var object = function (req, res, next) {
   return knex('store_orders')
   .where('id', req.params.id)
   .then(function ([ obj ]) {
+    obj.date = moment(obj.date).format('YYYY-MM-DD');
     res.json(casing.camelize(obj));
     next();
   })
@@ -168,5 +175,22 @@ var update = function (req, res, next) {
 };
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), update);
+
+var getHints = function getHints(req, res, next) {
+  let { kw } = req.params;
+  knex('store_orders')
+  .whereRaw('UPPER(store_orders.number) like ?',
+            kw.toUpperCase() + '%')
+  .then(function (list) {
+    res.json({ data: list.map(it => it.number) });
+    next();
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
+};
+
+router.get('/hints/:kw', loginRequired, getHints);
 
 module.exports = { router };
