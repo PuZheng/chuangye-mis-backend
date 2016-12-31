@@ -153,6 +153,7 @@ router.post(
       return co(function *() {
         if (action === 'CLOSE') {
           let [chargeBill] = yield knex('charge_bills')
+          .where({ account_term_id: id })
           .select(['id', 'closed']);
           if (!chargeBill || !chargeBill.closed) {
             res.json(400, {
