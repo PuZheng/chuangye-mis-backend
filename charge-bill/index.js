@@ -6,7 +6,9 @@ var co = require('co');
 var casing = require('casing');
 var R = require('ramda');
 var departmentChargeBillGrid = require('./department-charge-bill-grid');
-var { METER_TYPES, STORE_ORDER_DIRECTIONS, STORE_SUBJECT_TYPES } =
+var {
+  METER_TYPES, STORE_ORDER_DIRECTIONS, STORE_SUBJECT_TYPES, PAYMENT_RECORD_TYPES
+} =
   require('../const');
 var chargeBillDef = require('./charge-bill-def');
 var logger = require('../logger');
@@ -155,6 +157,12 @@ var calcTotalElectricConsumptionAndFee = function (sheet) {
   };
 };
 
+var searchCells = function searchCell(fragment, test) {
+  return R.flatten(
+    fragment.map(R.filter(test))
+  );
+};
+
 var createDepartmentChargeBills = function *(trx, chargeBill) {
   let { def: { sheets }, accountTermId } = chargeBill;
   let 电表Sheet = R.find(R.propEq('label', METER_TYPES.电表))(sheets);
@@ -226,6 +234,41 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
       account_term_id: accountTermId,
       department_id,
       def: { sheets: [ { grid } ] },
+    });
+    yield trx('payment_records').insert({
+      account_term_id: accountTermId,
+      department_id,
+      type: PAYMENT_RECORD_TYPES.原材料费用,
+      amount: R.sum(
+        searchCells(grid, function (labels) {
+          return ~labels.indexOf;
+        }(['原材料', '氰化钠分摊'].map(it => it + '-总金额')))
+        .map(R.prop('val'))
+      ),
+      tax: R.sum(
+        searchCells(grid, function (labels) {
+          return ~labels.indexOf;
+        }(['原材料', '氰化钠分摊'].map(it => it + '-总可抵税额')))
+        .map(R.prop('val'))
+      )
+    });
+    yield trx('payment_records').insert({
+      account_term_id: accountTermId,
+      department_id,
+      type: PAYMENT_RECORD_TYPES.水电煤气,
+      amount: R.sum(
+        searchCells(grid, function (labels) {
+          return ~labels.indexOf;
+        }(['电表', '水表', '生活水表', '蒸汽表'].map(it => it + '-总金额')))
+        .map(R.prop('val'))
+      ),
+      tax: R.sum(
+        searchCells(grid, function (labels) {
+          return ~labels.indexOf;
+        }(
+          ['电表', '水表', '生活水表', '蒸汽表'].map(it => it + '-总可抵税额')))
+        .map(R.prop('val'))
+      )
     });
   }
 };

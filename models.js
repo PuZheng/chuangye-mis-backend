@@ -1,7 +1,7 @@
 var knex = require('./knex');
 var {
  ROLES, ENTITY_TYPES, STORE_SUBJECT_TYPES, INVOICE_STATES,
- STORE_ORDER_DIRECTIONS, METER_STATES
+ STORE_ORDER_DIRECTIONS, METER_STATES, PAYMENT_RECORD_TYPES
 } =
   require('./const');
 var R = require('ramda');
@@ -228,15 +228,16 @@ exports.account_books = {
   '': t => t.unique(['account_term_id', 'entity_id']),
 };
 
+// 预扣费记录
 exports.payment_records = {
   id: t => t.increments(),
   department_id: t => t.integer('department_id').references('departments.id'),
   account_term_id: t => t.integer('account_term_id')
   .references('account_terms.id').notNullable().unique(),
-  finished: t => t.boolean('finished'),
+  finished: t => t.boolean('finished').defaultTo(false),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
-  amount: t => t.timestamp('amount'),
-  reason: t => t.string('reason')
+  quantity: t => t.timestamp('quantity'),
+  type: t => t.enum('type', R.values(PAYMENT_RECORD_TYPES)).notNullable(),
 };
 
 exports.accounts = {
