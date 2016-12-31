@@ -152,6 +152,14 @@ router.post(
     knex.transaction(function (trx) {
       return co(function *() {
         if (action === 'CLOSE') {
+          let [chargeBill] = yield knex('charge_bills')
+          .select(['id', 'closed']);
+          if (!chargeBill || !chargeBill.closed) {
+            res.json(400, {
+              reason: '本账期费用清单尚未创建或关闭!',
+            });
+          }
+          // 认证所有的发票
           let invoices = yield trx('invoices').where({ account_term_id: id })
           .select('*');
           for (let invoice of invoices) {
