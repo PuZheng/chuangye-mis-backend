@@ -18,6 +18,8 @@ var prettyjson = require('prettyjson');
 /* eslint-enable no-unused-vars */
 var { store_orders: storeOrderDef, store_subjects: storeSubjectDef } =
   require('../models');
+var Analyzer = require('../frontend/smart-grid/analyzer');
+var DataSlotManager = require('../frontend/smart-grid/data-slot-manager');
 
 var router = new Router();
 
@@ -173,9 +175,9 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
   /* eslint-disable max-len */
   logger.info(`公司总直接用电量: ${totalElectricConsumption}, 公司总直接电费: ${totalElectricFee}`);
   /* eslint-enable max-len */
-  let settings = yield knex('settings').select('*')
+  let settings = yield trx('settings').select('*')
   .then(casing.camelize);
-  let storeOrders = yield knex('store_orders')
+  let storeOrders = yield trx('store_orders')
   .where('account_term_id', accountTermId)
   .where('direction', STORE_ORDER_DIRECTIONS.OUTBOUND)
   .where('store_subjects.type', STORE_SUBJECT_TYPES.MATERIAL)
@@ -189,7 +191,7 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
   .then(R.map(layerify))
   .then(casing.camelize);
   let data = {};
-  let meterTypes = yield knex('meter_types').select('*').then(casing.camelize);
+  let meterTypes = yield trx('meter_types').select('*').then(casing.camelize);
   for (let sheet of sheets) {
     let meterType = R.find(R.propEq('name', sheet.label))(meterTypes);
     for (let row of sheet.grid.filter(R.pathEq(['data', 'tag'], 'meter'))) {
@@ -235,41 +237,76 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
       department_id,
       def: { sheets: [ { grid } ] },
     });
-    yield trx('payment_records').insert({
-      account_term_id: accountTermId,
-      department_id,
-      type: PAYMENT_RECORD_TYPES.原材料费用,
-      amount: R.sum(
+    let analyzer = new Analyzer({
+      sheets: [{ grid }]
+    });
+    let dataSlotManager = new DataSlotManager(analyzer);
+    let amount = R.sum(
         searchCells(grid, function (labels) {
-          return ~labels.indexOf;
+          return function (cell) {
+            return cell && ~labels.indexOf(cell.label);
+          };
         }(['原材料', '氰化钠分摊'].map(it => it + '-总金额')))
-        .map(R.prop('val'))
-      ),
-      tax: R.sum(
-        searchCells(grid, function (labels) {
-          return ~labels.indexOf;
-        }(['原材料', '氰化钠分摊'].map(it => it + '-总可抵税额')))
-        .map(R.prop('val'))
-      )
-    });
-    yield trx('payment_records').insert({
-      account_term_id: accountTermId,
-      department_id,
-      type: PAYMENT_RECORD_TYPES.水电煤气,
-      amount: R.sum(
-        searchCells(grid, function (labels) {
-          return ~labels.indexOf;
-        }(['电表', '水表', '生活水表', '蒸汽表'].map(it => it + '-总金额')))
-        .map(R.prop('val'))
-      ),
-      tax: R.sum(
-        searchCells(grid, function (labels) {
-          return ~labels.indexOf;
-        }(
-          ['电表', '水表', '生活水表', '蒸汽表'].map(it => it + '-总可抵税额')))
-        .map(R.prop('val'))
-      )
-    });
+        .map(function (cell) {
+          let tag = analyzer.getTagByLabel(0, cell.label);
+          let slot = dataSlotManager.get(0, tag);
+          return slot.val();
+        })
+    ).toFixed(2);
+    if (Number(amount) != 0) {
+      yield trx('payment_records').insert({
+        account_term_id: accountTermId,
+        department_id,
+        type: PAYMENT_RECORD_TYPES.原材料费用,
+        amount,
+        tax: R.sum(
+          searchCells(grid, function (labels) {
+            return function (cell) {
+              return cell && ~labels.indexOf(cell.label);
+            };
+          }(['原材料', '氰化钠分摊'].map(it => it + '-总可抵税额')))
+          .map(function (cell) {
+            let tag = analyzer.getTagByLabel(0, cell.label);
+            let slot = dataSlotManager.get(0, tag);
+            return slot.val();
+          })
+        ).toFixed(2),
+      });
+    }
+    amount = R.sum(
+      searchCells(grid, function (labels) {
+        return function (cell) {
+          return cell && ~labels.indexOf(cell.label);
+        };
+      }(['电表', '水表', '生活水表', '蒸汽表'].map(it => it + '-总金额')))
+      .map(function (cell) {
+        let tag = analyzer.getTagByLabel(0, cell.label);
+        let slot = dataSlotManager.get(0, tag);
+        return slot.val();
+      })
+    ).toFixed(2);
+    if (amount != 0) {
+      yield trx('payment_records').insert({
+        account_term_id: accountTermId,
+        department_id,
+        type: PAYMENT_RECORD_TYPES.水电煤气,
+        amount,
+        tax: R.sum(
+          searchCells(grid, function (labels) {
+            return function (cell) {
+              return cell && ~labels.indexOf(cell.label);
+            };
+          }(
+            ['电表', '水表', '生活水表', '蒸汽表'].map(it => it + '-总可抵税额')))
+            .map(function (cell) {
+              let tag = analyzer.getTagByLabel(0, cell.label);
+              let slot = dataSlotManager.get(0, tag);
+              return slot.val();
+            })
+        ).toFixed(2),
+      });
+
+    }
   }
 };
 

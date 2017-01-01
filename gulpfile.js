@@ -1,6 +1,10 @@
 var nodemon = require('gulp-nodemon');
 var gulp = require('gulp');
 var eslint = require('gulp-eslint');
+var rollup = require('rollup').rollup;
+var babel = require('rollup-plugin-babel');
+var includePaths = require('rollup-plugin-includepaths');
+
 
 gulp.task('serve', function() {
   var options = {
@@ -25,6 +29,60 @@ gulp.task('lint', function() {
   // To have the process exit with an error code (1) on
   // lint error, return the stream and pipe to failAfterError last.
   .pipe(eslint.failAfterError());
+});
+
+gulp.task('rollup', function () {
+  var plugins = [
+    includePaths({
+      paths: ['chuangye-mis/js/'],
+      include: {
+        slot: 'chuangye-mis/js/slot/index.js',
+      }
+    }),
+  ];
+  if (process.env.NODE_ENV === 'production') {
+    plugins.push(babel({
+      presets: [['es2015', { modules: false }]],
+      plugins: [
+        'external-helpers'
+      ],
+      exclude: ['node_modules/**']
+    }));
+  }
+  return Promise.all(
+    [
+      rollup({
+        entry: 'chuangye-mis/js/slot/index.js',
+        plugins,
+      })
+      .then(function (bundle) {
+        return bundle.write({
+          format: 'cjs',
+          dest: 'frontend/slot.js',
+        });
+      }),
+      rollup({
+        entry: 'chuangye-mis/js/smart-grid/data-slot-manager.js',
+        plugins,
+      })
+      .then(function (bundle) {
+        return bundle.write({
+          format: 'cjs',
+          dest: 'frontend/smart-grid/data-slot-manager.js',
+        });
+      }),
+      rollup({
+        entry: 'chuangye-mis/js/smart-grid/analyzer.js',
+        plugins,
+      })
+      .then(function (bundle) {
+        return bundle.write({
+          format: 'cjs',
+          dest: 'frontend/smart-grid/analyzer.js',
+        });
+      }),
+    ]
+  );
 });
 
 gulp.task('default', ['serve']);

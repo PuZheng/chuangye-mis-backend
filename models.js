@@ -233,10 +233,11 @@ exports.payment_records = {
   id: t => t.increments(),
   department_id: t => t.integer('department_id').references('departments.id'),
   account_term_id: t => t.integer('account_term_id')
-  .references('account_terms.id').notNullable().unique(),
+  .references('account_terms.id').notNullable(),
   finished: t => t.boolean('finished').defaultTo(false),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
-  quantity: t => t.timestamp('quantity'),
+  amount: t => t.float('amount').notNullable(), // 金额
+  tax: t => t.float('tax').notNullable(),
   type: t => t.enum('type', R.values(PAYMENT_RECORD_TYPES)).notNullable(),
 };
 
