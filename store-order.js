@@ -10,7 +10,8 @@ var {
   [TABLE_NAME]: storeOrderDef,
   store_subjects: storeSubjectDef,
   departments: departmentDef,
-  account_terms: accountTermDef
+  account_terms: accountTermDef,
+  entities: entityDef
 } = require('./models');
 var layerify = require('./utils/layerify');
 var R = require('ramda');
@@ -26,14 +27,19 @@ var list = function (req, res, next) {
     )
     .join(
       'account_terms', 'account_terms.id', 'store_orders.account_term_id'
+    )
+    .leftOuterJoin(
+      'entities as suppliers', 'suppliers.id', 'store_orders.supplier_id'
+    )
+    .leftOuterJoin(
+      'entities as customers', 'customers.id', 'store_orders.customer_id'
     );
-
 
     // filters
     for (
       let col of [
-        'type', 'direction', 'subject_id', 'department_id',
-        'account_term_id', 'number__like'
+        'type', 'direction', 'subject_id', 'department_id', 'number',
+        'account_term_id', 'number__like', 'customer_id', 'supplier_id'
       ]
     ) {
       let v = req.params[col] || '';
@@ -49,6 +55,14 @@ var list = function (req, res, next) {
       case 'number__like': {
         v && q.whereRaw('UPPER(store_orders.number) like ?',
                         v.toUpperCase() + '%');
+        break;
+      }
+      case 'supplier_id': {
+        v && q.where('suppliers.id', v);
+        break;
+      }
+      case 'customer_id': {
+        v && q.where('customers.id', v);
         break;
       }
       default:
@@ -98,7 +112,11 @@ var list = function (req, res, next) {
       'invoices.id as invoice__id',
       'invoices.number as invoice__number',
       ...Object.keys(departmentDef)
-      .map(it => `departments.${it} as department__${it}`)
+      .map(it => `departments.${it} as department__${it}`),
+      ...Object.keys(entityDef)
+      .map(it => `suppliers.${it} as supplier__${it}`),
+      ...Object.keys(entityDef)
+      .map(it => `customers.${it} as customer__${it}`),
     ])
     .then(function (data) {
       return data.map(function (record) {

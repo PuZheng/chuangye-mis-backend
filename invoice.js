@@ -14,7 +14,10 @@ var getStoreSubject = require('./store-subject').getObject;
 var getUser = require('./user').getObject;
 var R = require('ramda');
 var StateMachine = require('./lite-sm');
-var { INVOICE_STATES, INVOICE_ACTIONS } = require('./const');
+var {
+  INVOICE_STATES, INVOICE_ACTIONS, STORE_SUBJECT_TYPES, STORE_ORDER_DIRECTIONS
+} =
+  require('./const');
 
 var sm = new StateMachine();
 
@@ -44,6 +47,16 @@ sm.addState(INVOICE_STATES.UNAUTHENTICATED, {
             so.invoice_id = obj.id;
             so.account_term_id = obj.accountTermId;
             so.date = obj.date;
+            // 若采购原材料
+            if (so.direction == STORE_ORDER_DIRECTIONS.INBOUND &&
+                invoiceType.storeSubjectType == STORE_SUBJECT_TYPES.MATERIAL) {
+              so.supplier_id = obj.vendorId;
+            }
+            // 若发货
+            if (so.direction == STORE_ORDER_DIRECTIONS.OUTBOUND &&
+                invoiceType.storeSubjectType == STORE_SUBJECT_TYPES.PRODUCT) {
+              so.customer_id = obj.purchaserId;
+            }
             yield trx.insert(R.pick(Object.keys(storeOrderDef), so))
             .into('store_orders');
           } else {
@@ -109,6 +122,16 @@ router.post(
           so.invoice_id = invoice.id;
           so.date = invoice.date;
           so.account_term_id = invoice.accountTermId;
+          // 若采购原材料
+          if (so.direction == STORE_ORDER_DIRECTIONS.INBOUND &&
+             invoiceType.storeSubjectType == STORE_SUBJECT_TYPES.MATERIAL) {
+            so.supplier_id = invoice.vendorId;
+          }
+          // 若发货
+          if (so.direction == STORE_ORDER_DIRECTIONS.OUTBOUND &&
+             invoiceType.storeSubjectType == STORE_SUBJECT_TYPES.PRODUCT) {
+            so.customer_id = invoice.purchaserId;
+          }
           yield trx.insert(so).into('store_orders');
         }
         res.send(invoice);

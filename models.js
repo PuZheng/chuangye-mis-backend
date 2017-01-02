@@ -149,6 +149,10 @@ exports.store_orders = {
   date: t => t.date('date').notNullable(),
   account_term_id: t => t.integer('account_term_id')
   .references('account_terms.id').notNullable(),
+  // 如果是采购原材料，记录供应商
+  supplier_id: t => t.integer('supplier_id').references('entities.id'),
+  // 若是发货， 记录客户
+  customer_id: t => t.integer('customer_id').references('entities.id'),
 };
 
 
