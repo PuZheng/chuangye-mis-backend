@@ -32,7 +32,7 @@ let apps = [
   'store-subject', 'voucher-type', 'voucher-subject', 'voucher',
   'department', 'tenant', 'settings', 'meter', 'user', 'store-order',
   'meter-type', 'charge-bill', 'partner', 'account', 'account-book',
-  'department-charge-bill', 'meter-reading'
+  'department-charge-bill', 'meter-reading', 'payment-record'
 ];
 for (let app of apps) {
   require('./' + app).router.applyRoutes(server, '/' + app);

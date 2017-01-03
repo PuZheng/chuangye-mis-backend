@@ -218,6 +218,7 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
       data[departmentId][meterType.id].meters.push(meterData);
     }
   }
+  let paymentRecords = [];
   for (let department_id in data) {
     let grid = departmentChargeBillGrid({
       meterTypes: R.values(data[department_id]),
@@ -254,7 +255,7 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
         })
     ).toFixed(2);
     if (Number(amount) != 0) {
-      yield trx('payment_records').insert({
+      paymentRecords.push({
         account_term_id: accountTermId,
         department_id,
         type: PAYMENT_RECORD_TYPES.原材料费用,
@@ -286,7 +287,7 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
       })
     ).toFixed(2);
     if (amount != 0) {
-      yield trx('payment_records').insert({
+      paymentRecords.push({
         account_term_id: accountTermId,
         department_id,
         type: PAYMENT_RECORD_TYPES.水电煤气,
@@ -305,9 +306,9 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
             })
         ).toFixed(2),
       });
-
     }
   }
+  yield trx.batchInsert('payment_records', paymentRecords);
 };
 
 module.exports = {

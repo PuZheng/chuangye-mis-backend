@@ -91,7 +91,7 @@ var list = function (req, res, next) {
     // offset & limit
     let {page, page_size} = req.params;
     if (page && page_size) {
-      q.offset((req.params.page - 1) * page_size).limit(page_size);
+      q.offset((page - 1) * page_size).limit(page_size);
     }
 
     let data = yield q

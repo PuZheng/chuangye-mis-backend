@@ -73,6 +73,12 @@ exports.PAYMENT_RECORD_TYPES = {
   水电煤气: '水电煤气',
 };
 
+exports.PAYMENT_RECORD_STATUS = {
+  unprocessed: '待处理',
+  rejected: '被驳回',
+  processed: '已处理',
+};
+
 var Router = require('restify-router').Router;
 var loginRequired = require('./login-required');
 var router = new Router();

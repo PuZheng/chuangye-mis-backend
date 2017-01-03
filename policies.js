@@ -13,6 +13,7 @@ exports[ROLES.CASHIER] = new Set([
   'edit.invoice.object',
   'view.tenant.list',
   'edit.tenant.object',
+  'edit.payment_record',
 ]);
 exports[ROLES.ADMIN] = new Set([
   'edit.department',
@@ -26,4 +27,5 @@ exports[ROLES.ADMIN] = new Set([
   'edit.store_subject',
   'edit.partner',
   'edit.meter_reading',
+  'edit.payment_record'
 ]);
