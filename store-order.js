@@ -144,7 +144,14 @@ router.get('/list', loginRequired, restify.queryParser(), list);
 var create = function (req, res, next) {
   return co(function *() {
     let data = R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body));
-    console.log(data);
+    let [{ count }] = yield knex('store_orders')
+    .where('number', data.number).count('*');
+    if (Number(count) > 0) {
+      res.json(400, {
+        number: '该编号已经存在',
+      });
+      return;
+    }
     let [ {id: account_term_id} ] = yield knex('account_terms')
     .where('name', moment(data.date).format('YYYY-MM')).select('id');
     data.account_term_id = account_term_id;
@@ -179,10 +186,19 @@ var object = function (req, res, next) {
 router.get('/object/:id', loginRequired, object);
 
 var update = function (req, res, next) {
-  return knex('store_orders')
-  .where('id', req.params.id)
-  .update(R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body)))
-  .then(function () {
+  return co(function *() {
+    let data = R.pick(Object.keys(storeOrderDef), casing.snakeize(req.body));
+    let { id } = req.params;
+    let [{ count }] = yield knex('store_orders')
+    .whereNot({ id })
+    .where('number', data.number).count('*');
+    if (Number(count) > 0) {
+      res.json(400, {
+        number: '该编号已经存在',
+      });
+      return;
+    }
+    yield knex('store_orders').where({ id }).update(data);
     res.json({});
     next();
   })
