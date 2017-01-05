@@ -57,10 +57,13 @@ exports.INVOICE_ACTIONS = {
 };
 
 // 内建的凭证科目
-exports.VOUCHER_SUBJECTS = {
+const VOUCHER_SUBJECTS = {
   PRESET_INCOME: '系统预设收入',
   PRESET_EXPENSE: '系统预设支出',
+  原材料开支: '原材料开支',
+  水电煤气开支: '水电煤气开支'
 };
+exports.VOUCHER_SUBJECTS = VOUCHER_SUBJECTS;
 
 // 内建的凭证类型
 exports.VOUCHER_TYPES = {
@@ -68,15 +71,26 @@ exports.VOUCHER_TYPES = {
   BANK_VOUCHER: '银行凭证'
 };
 
-exports.PAYMENT_RECORD_TYPES = {
+const PAYMENT_RECORD_TYPES = {
   原材料费用: '原材料费用',
   水电煤气: '水电煤气',
 };
+exports.PAYMENT_RECORD_TYPES = PAYMENT_RECORD_TYPES;
 
-exports.PAYMENT_RECORD_STATUS = {
-  unprocessed: '待处理',
-  rejected: '被驳回',
-  processed: '已处理',
+exports.PAYMENT_RECORD_TYPE_VOUCHER_SUBJECT_MAP = {
+  [PAYMENT_RECORD_TYPES.原材料费用]: VOUCHER_SUBJECTS.原材料开支,
+  [PAYMENT_RECORD_TYPES.水电煤气]: VOUCHER_SUBJECTS.水电煤气开支,
+};
+
+exports.PAYMENT_RECORD_STATES = {
+  UNPROCESSED: '待处理',
+  REJECTED: '被驳回',
+  PASSED: '已处理',
+};
+
+exports.PAYMENT_RECORD_ACTIONS = {
+  PASS: '通过',
+  REJECT: '拒绝',
 };
 
 var Router = require('restify-router').Router;
