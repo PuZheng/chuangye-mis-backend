@@ -9,7 +9,8 @@ var layerify = require('./utils/layerify');
 var {
   payment_records: paymentRecordDef,
   departments: departmentDef,
-  vouchers: voucherDef
+  vouchers: voucherDef,
+  account_terms: accountTermDef
 } = require('./models');
 var StateMachine = require('./lite-sm');
 var {
@@ -43,20 +44,20 @@ sm.addState(UNPROCESSED, {
   return R.cond([
     [R.equals('PASS'), R.always(
       knex.transaction(function (trx) {
-        return co(function *() {
+        return co(function* () {
           let [paymentRecordType] = yield trx('payment_record_types')
-          .where('id', paymentRecordTypeId).select('*');
+            .where('id', paymentRecordTypeId).select('*');
           let voucherSubjectName =
             PAYMENT_RECORD_TYPE_VOUCHER_SUBJECT_MAP[paymentRecordType.name];
           let [voucherSubject] = yield trx('voucher_subjects')
-          .where('name', voucherSubjectName).select('*');
+            .where('name', voucherSubjectName).select('*');
           let [payer] = yield trx('entities')
-          .join('tenants', 'tenants.entity_id', 'entities.id')
-          .join('departments', 'tenants.department_id', 'departments.id')
-          .where('departments.id', departmentId)
-          .select('*');
+            .join('tenants', 'tenants.entity_id', 'entities.id')
+            .join('departments', 'tenants.department_id', 'departments.id')
+            .where('departments.id', departmentId)
+            .select('*');
           let [recipient] = yield trx('entities')
-          .where('type', ENTITY_TYPES.OWNER);
+            .where('type', ENTITY_TYPES.OWNER);
           let [voucherId] = yield trx('vouchers').insert({
             number: makeInternalVoucherNumber(),
             amount,
@@ -68,28 +69,40 @@ sm.addState(UNPROCESSED, {
             account_term_id: accountTermId,
             creator_id: creatorId,
           })
-          .returning('id');
+            .returning('id');
           yield trx('payment_records').where({ id })
-          .update({ status: REJECTED, voucher_id: voucherId });
+            .update({ status: REJECTED, voucher_id: voucherId });
         });
       })
     )],
     [R.equals('REJECT'), R.always(knex('payment_records')
-                                  .where({ id })
-                                  .update({ status: REJECTED }))]
+      .where({ id })
+      .update({ status: REJECTED }))]
   ])(action);
 });
 
-var router = new  Router();
+var router = new Router();
 
 var list = function list(req, res, next) {
-  let q = knex('payment_records')
-  .leftOuterJoin('departments', 'departments.id',
-                 'payment_records.department_id')
-  .leftOuterJoin('vouchers', 'vouchers.id', 'payment_records.voucher_id');
+  return co(function* () {
+    let q = knex('payment_records')
+    .leftOuterJoin(
+      'departments', 'departments.id', 'payment_records.department_id'
+    )
+    .leftOuterJoin('vouchers', 'vouchers.id', 'payment_records.voucher_id')
+    .leftOuterJoin(
+      'account_terms', 'account_terms.id', 'payment_records.account_term_id'
+    );
 
-  return co(function *() {
     //filters
+    let { account_term_id, department_id, type } = req.params;
+    account_term_id && q.where(
+      'payment_records.account_term_id', account_term_id
+    );
+    department_id && q.where(
+      'payment_records.department_id', department_id
+    );
+    type && q.where('payment_records.type', type);
     //
     let totalCnt = (yield q.clone().count('*'))[0].count;
     // sort by
@@ -108,23 +121,28 @@ var list = function list(req, res, next) {
       ),
       ...Object.keys(voucherDef).map(
         it => `vouchers.${it} as voucher__${it}`
+      ),
+      ...Object.keys(accountTermDef).map(
+        it => `account_terms.${it} as account_term__${it}`
       )
     )
-    .then(R.map(layerify))
-    .then(R.map(function (paymentRecord) {
-      paymentRecord.actions = sm.state(paymentRecord.status).actions;
-    }))
-    .then(casing.camelize);
+      .then(R.map(layerify))
+      .then(R.map(function (paymentRecord) {
+        return Object.assign(paymentRecord, {
+          actions: sm.state(paymentRecord.status).actions
+        });
+      }))
+      .then(casing.camelize);
     res.json({
       data,
       totalCnt,
     });
     next();
   })
-  .catch(function (err) {
-    res.log.error({ err });
-    next(err);
-  });
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
+    });
 
 };
 
