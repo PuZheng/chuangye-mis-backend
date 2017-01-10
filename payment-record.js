@@ -69,15 +69,20 @@ sm.addState(UNPROCESSED, {
             account_term_id: accountTermId,
             creator_id: creatorId,
           })
-            .returning('id');
-          yield trx('payment_records').where({ id })
-            .update({ status: REJECTED, voucher_id: voucherId });
+          .returning('id');
+          return yield trx('payment_records').where({ id })
+          .update({ status: REJECTED, voucher_id: voucherId })
+          .returning('*')
+          .then(casing.camelize);
         });
       })
     )],
     [R.equals('REJECT'), R.always(knex('payment_records')
-      .where({ id })
-      .update({ status: REJECTED }))]
+                                  .where({ id })
+                                  .update({ status: REJECTED })
+                                  .returning('*')
+                                  .then(casing.camelize)
+                                 )]
   ])(action);
 });
 
@@ -126,13 +131,13 @@ var list = function list(req, res, next) {
         it => `account_terms.${it} as account_term__${it}`
       )
     )
-      .then(R.map(layerify))
-      .then(R.map(function (paymentRecord) {
-        return Object.assign(paymentRecord, {
-          actions: sm.state(paymentRecord.status).actions
-        });
-      }))
-      .then(casing.camelize);
+    .then(R.map(layerify))
+    .then(R.map(function (paymentRecord) {
+      return Object.assign(paymentRecord, {
+        actions: sm.state(paymentRecord.status).actions
+      });
+    }))
+    .then(casing.camelize);
     res.json({
       data,
       totalCnt,
@@ -147,5 +152,26 @@ var list = function list(req, res, next) {
 };
 
 router.get('/list', loginRequired, restify.queryParser(), list);
+
+router.post('/object/:id/:action', loginRequired, function (req, res, next) {
+  return co(function *() {
+    let { id, action } = req.params;
+    let [obj] = knex('payment_records').where({ id }).select('*')
+    .then(casing.camelize);
+    if (!obj) {
+      res.send(404, {});
+      next();
+      return;
+    }
+    if (action != PASS || action != REJECT) {
+      res.send(400, 'unknown ation: ' + action);
+      next();
+      return;
+    }
+    obj = yield sm.bundle(obj).perform(action, req.user.id);
+    res.json(obj);
+    next();
+  });
+});
 
 module.exports = { router };
