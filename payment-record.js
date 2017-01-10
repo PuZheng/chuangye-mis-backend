@@ -38,52 +38,52 @@ var sm = new StateMachine();
 sm.addState(UNPROCESSED, {
   [PASS]: PASSED,
   [REJECT]: REJECTED
-}, function (obj, creatorId) {
-  let { id, amount, paymentRecordTypeId, accountTermId, departmentId } = obj;
-  let { action } = this;
-  return R.cond([
-    [R.equals('PASS'), R.always(
-      knex.transaction(function (trx) {
-        return co(function* () {
-          let [paymentRecordType] = yield trx('payment_record_types')
-            .where('id', paymentRecordTypeId).select('*');
-          let voucherSubjectName =
-            PAYMENT_RECORD_TYPE_VOUCHER_SUBJECT_MAP[paymentRecordType.name];
-          let [voucherSubject] = yield trx('voucher_subjects')
-            .where('name', voucherSubjectName).select('*');
-          let [payer] = yield trx('entities')
-            .join('tenants', 'tenants.entity_id', 'entities.id')
-            .join('departments', 'tenants.department_id', 'departments.id')
-            .where('departments.id', departmentId)
-            .select('*');
-          let [recipient] = yield trx('entities')
-            .where('type', ENTITY_TYPES.OWNER);
-          let [voucherId] = yield trx('vouchers').insert({
-            number: makeInternalVoucherNumber(),
-            amount,
-            date: new Date(),
-            voucher_type_id: VOUCHER_TYPES.CASH,
-            voucherSubjectId: voucherSubject.id,
-            payer_id: payer.id,
-            recipient_id: recipient.id,
-            account_term_id: accountTermId,
-            creator_id: creatorId,
-          })
-          .returning('id');
-          return yield trx('payment_records').where({ id })
-          .update({ status: REJECTED, voucher_id: voucherId })
-          .returning('*')
-          .then(casing.camelize);
-        });
+})
+.addState(PASSED, null, function (creatorId) {
+  console.log(this.sm.bundle());
+  let { id, amount, type, accountTermId, departmentId } = this.sm.bundle();
+  return knex.transaction(function (trx) {
+    return co(function* () {
+      let voucherSubjectName =
+        PAYMENT_RECORD_TYPE_VOUCHER_SUBJECT_MAP[type];
+      let [voucherSubject] = yield trx('voucher_subjects')
+      .where('name', voucherSubjectName).select('*');
+      let [payer] = yield trx('entities')
+      .join('tenants', 'tenants.entity_id', 'entities.id')
+      .join('departments', 'tenants.department_id', 'departments.id')
+      .where('departments.id', departmentId)
+      .select('*');
+      let [recipient] = yield trx('entities')
+      .where('type', ENTITY_TYPES.OWNER);
+      let [voucherType] = yield trx('voucher_types')
+      .where('name', VOUCHER_TYPES.CASH).select('id');
+      let [voucherId] = yield trx('vouchers').insert({
+        number: makeInternalVoucherNumber(),
+        amount,
+        date: new Date(),
+        voucher_type_id: voucherType.id,
+        voucher_subject_id: voucherSubject.id,
+        payer_id: payer.id,
+        recipient_id: recipient.id,
+        account_term_id: accountTermId,
+        creator_id: creatorId,
       })
-    )],
-    [R.equals('REJECT'), R.always(knex('payment_records')
-                                  .where({ id })
-                                  .update({ status: REJECTED })
-                                  .returning('*')
-                                  .then(casing.camelize)
-                                 )]
-  ])(action);
+      .returning('id');
+      return (yield trx('payment_records').where({ id })
+      .update({ status: PASSED, voucher_id: voucherId })
+      .returning('*')
+      .then(casing.camelize))[0];
+    });
+  });
+})
+.addState(REJECTED, null, function () {
+  let { id } = this.sm.bundle();
+  return knex('payment_records')
+  .where({ id })
+  .update({ status: REJECTED })
+  .returning('*')
+  .then(casing.camelize)
+  .then(it => it[0]);
 });
 
 var router = new Router();
@@ -100,7 +100,7 @@ var list = function list(req, res, next) {
     );
 
     //filters
-    let { account_term_id, department_id, type } = req.params;
+    let { account_term_id, department_id, type, status } = req.params;
     account_term_id && q.where(
       'payment_records.account_term_id', account_term_id
     );
@@ -108,9 +108,11 @@ var list = function list(req, res, next) {
       'payment_records.department_id', department_id
     );
     type && q.where('payment_records.type', type);
+    status && q.where('payment_records.status', status);
     //
     let totalCnt = (yield q.clone().count('*'))[0].count;
     // sort by
+    q.orderBy('id', 'desc');
     //
     // offset & limit
     let {page, page_size} = req.params;
@@ -144,10 +146,10 @@ var list = function list(req, res, next) {
     });
     next();
   })
-    .catch(function (err) {
-      res.log.error({ err });
-      next(err);
-    });
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
 
 };
 
@@ -156,21 +158,29 @@ router.get('/list', loginRequired, restify.queryParser(), list);
 router.post('/object/:id/:action', loginRequired, function (req, res, next) {
   return co(function *() {
     let { id, action } = req.params;
-    let [obj] = knex('payment_records').where({ id }).select('*')
+    let [obj] = yield knex('payment_records').where({ id }).select('*')
     .then(casing.camelize);
     if (!obj) {
       res.send(404, {});
       next();
       return;
     }
-    if (action != PASS || action != REJECT) {
-      res.send(400, 'unknown ation: ' + action);
+    if (action != PASS && action != REJECT) {
+      res.send(400, 'unknown action: ' + action);
       next();
       return;
     }
-    obj = yield sm.bundle(obj).perform(action, req.user.id);
-    res.json(obj);
+    let { voucherId, status } = yield sm.bundle(obj).state(UNPROCESSED)
+    .perform(action, req.user.id);
+    res.json({
+      voucherId, status,
+      actions: sm.state(status).actions
+    });
     next();
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 
