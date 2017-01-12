@@ -10,7 +10,8 @@ var {
   payment_records: paymentRecordDef,
   departments: departmentDef,
   vouchers: voucherDef,
-  account_terms: accountTermDef
+  account_terms: accountTermDef,
+  tenants: tenantDef
 } = require('./models');
 var StateMachine = require('./lite-sm');
 var {
@@ -40,7 +41,6 @@ sm.addState(UNPROCESSED, {
   [REJECT]: REJECTED
 })
 .addState(PASSED, null, function (creatorId) {
-  console.log(this.sm.bundle());
   let { id, amount, type, accountTermId, departmentId } = this.sm.bundle();
   return knex.transaction(function (trx) {
     return co(function* () {
@@ -94,6 +94,7 @@ var list = function list(req, res, next) {
     .leftOuterJoin(
       'departments', 'departments.id', 'payment_records.department_id'
     )
+    .leftOuterJoin('tenants', 'departments.id', 'tenants.department_id')
     .leftOuterJoin('vouchers', 'vouchers.id', 'payment_records.voucher_id')
     .leftOuterJoin(
       'account_terms', 'account_terms.id', 'payment_records.account_term_id'
@@ -125,6 +126,9 @@ var list = function list(req, res, next) {
       ),
       ...Object.keys(departmentDef).map(
         it => `departments.${it} as department__${it}`
+      ),
+      ...Object.keys(tenantDef).map(
+        it => `tenants.${it} as department__tenant__${it}`
       ),
       ...Object.keys(voucherDef).map(
         it => `vouchers.${it} as voucher__${it}`

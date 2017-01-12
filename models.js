@@ -242,8 +242,8 @@ exports.payment_records = {
   status: t => t.enum('status', R.values(PAYMENT_RECORD_STATES))
   .defaultTo(PAYMENT_RECORD_STATES.UNPROCESSED),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
-  amount: t => t.float('amount').notNullable(), // 金额
-  tax: t => t.float('tax').notNullable(),
+  amount: t => t.float('amount', 12, 2).notNullable(), // 金额
+  tax: t => t.float('tax', 12, 2).notNullable(),
   type: t => t.enum('type', R.values(PAYMENT_RECORD_TYPES)).notNullable(),
   voucher_id: t => t.integer('voucher_id').references('vouchers.id'),
 };
