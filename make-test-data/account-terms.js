@@ -5,11 +5,11 @@ var knex = require('../knex');
 
 var makeAccountTerms = function () {
   var accountTerms = [
-    ['2016-04', true],
-    ['2016-05', true],
-    ['2016-06', true],
-    ['2016-07', true],
-    ['2016-08', true],
+    ['2016-04', false],
+    ['2016-05', false],
+    ['2016-06', false],
+    ['2016-07', false],
+    ['2016-08', false],
     ['2016-09', false],
     ['2016-10', false],
   ];

@@ -252,6 +252,8 @@ exports.accounts = {
   id: t => t.increments(),
   entity_id: t => t.integer('entity_id').references('entities.id')
   .notNullable(),
-  income: t => t.integer('income').notNullable(),
-  expense: t => t.integer('expense').notNullable()
+  income: t => t.float('income', 12, 2).notNullable(),
+  expense: t => t.float('expense', 12, 2).notNullable(),
+  // 内部抵税结转额
+  tax_offset_balance: t => t.float('tax_offset_balance', 12, 3).notNullable().defaultTo(0),
 };

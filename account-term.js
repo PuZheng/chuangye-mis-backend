@@ -11,7 +11,8 @@ var {
   voucher_types: voucherTypeDef
 } = require('./models');
 var co = require('co');
-var { INVOICE_ACTIONS, ENTITY_TYPES } = require('./const');
+var { INVOICE_ACTIONS, ENTITY_TYPES, PAYMENT_RECORD_STATES } =
+  require('./const');
 var { sm } = require('./invoice');
 var layerify = require('./utils/layerify');
 var moment = require('moment');
@@ -159,6 +160,19 @@ router.post(
             res.json(400, {
               reason: '本账期费用清单尚未创建或关闭!',
             });
+            next();
+            return;
+          }
+          let [ { count: unprocessedPaymentRecordCnt } ] =
+            yield knex('payment_records').where({ account_term_id: id })
+          .andWhere({ status: PAYMENT_RECORD_STATES.UNPROCESSED })
+          .count();
+          if (Number(unprocessedPaymentRecordCnt) > 0) {
+            res.json(400, {
+              reason: '请先处理本账期内所有的预扣记录!',
+            });
+            next();
+            return;
           }
           // 认证所有的发票
           let invoices = yield trx('invoices').where({ account_term_id: id })
