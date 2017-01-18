@@ -62,7 +62,7 @@ router.post(
   }
 );
 
-// 创建收支明细表
+// 创建承包人收支明细表
 var makeAccountBook = function ({ vouchers, account, entityId }) {
   let header = {
     readonly: true,
@@ -145,6 +145,82 @@ var makeAccountBook = function ({ vouchers, account, entityId }) {
   };
 };
 
+var authenticateInvoices = function *(trx, accountTermId) {
+  let invoices = yield trx('invoices').where({ account_term_id: accountTermId })
+  .select('*');
+  for (let invoice of invoices) {
+    if (~sm.state(invoice.status).actions.indexOf(INVOICE_ACTIONS.AUTHENTICATE)) {
+      yield sm.perform(INVOICE_ACTIONS.AUTHENTICATE, invoice.id);
+    }
+  }
+};
+
+// 为每个承包人生成账簿, 并更新累计收入/支出
+var makeAccountBooks = function *(trx, accountTermId) {
+  let entities = yield trx('entities')
+  .where({ type: ENTITY_TYPES.TENANT }).select('*');
+  for (let entity of entities) {
+    let [account] = yield knex('accounts').where('entity_id', entity.id)
+    .select('*').then(casing.camelize);
+    let vouchers = yield knex.where('vouchers.account_term_id', accountTermId)
+    .where(function () {
+      this.where('vouchers.payer_id', entity.id)
+      .orWhere('vouchers.recipient_id', entity.id);
+    })
+    .join('voucher_subjects', 'vouchers.voucher_subject_id', 'voucher_subjects.id')
+    .join('voucher_types', 'vouchers.voucher_type_id', 'voucher_types.id')
+    .join('entities as payers', 'payers.id', 'vouchers.payer_id')
+    .join('entities as recipients', 'recipients.id', 'vouchers.recipient_id')
+    .orderBy('vouchers.date', 'desc')
+    .select([
+      ...Object.keys(voucherDef).map(it => 'vouchers.' + it),
+      ...Object.keys(voucherSubjectDef)
+      .map(it => `voucher_subjects.${it} as voucher_subject__${it}`),
+      ...Object.keys(voucherTypeDef)
+      .map(it => `voucher_types.${it} as voucher_type__${it}`),
+      'payers.name as payer__name', 'recipients.name as recipient__name'
+    ])
+    .from('vouchers')
+    .then(R.map(R.pipe(layerify, casing.camelize)));
+    yield trx('account_books').insert({
+      account_term_id: accountTermId,
+      entity_id: entity.id,
+      def: JSON.stringify(makeAccountBook(
+        { account: account, vouchers, entityId: entity.id }
+      ))
+    });
+    let thisMonthExpense = 0;
+    let thisMonthIncome = 0;
+    for (let voucher of vouchers) {
+      if (voucher.payerId == entity.id) {
+        thisMonthExpense += voucher.amount;
+      } else if (voucher.recipientId == entity.id) {
+        thisMonthIncome += voucher.amount;
+      }
+    }
+    yield trx('accounts').where('entity_id', entity.id)
+    .increment('income', thisMonthIncome)
+    .increment('expense', thisMonthExpense);
+  }
+};
+
+var makeOperatingReports = function *(trx, accountTermId) {
+  let header = {
+    readonly: true,
+    style: {
+      background: 'teal',
+      color: 'yellow',
+      fontWeight: 'bold',
+    }
+  };
+  let row0 = [
+    '车间', '销售额', '应抵', '上月结转', '经营费用发生', '进项发生', '差额'
+  ]
+  .map(it => Object.assign({
+    val: it
+  }, header));
+};
+
 router.post(
   '/object/:id/:action', loginRequired,
   function (req, res, next) {
@@ -174,70 +250,9 @@ router.post(
             next();
             return;
           }
-          // 认证所有的发票
-          let invoices = yield trx('invoices').where({ account_term_id: id })
-          .select('*');
-          for (let invoice of invoices) {
-            if (~sm.state(invoice.status).actions
-                .indexOf(INVOICE_ACTIONS.AUTHENTICATE)) {
-              yield sm.perform(INVOICE_ACTIONS.AUTHENTICATE, invoice.id);
-            }
-          }
-          let entities = yield trx('entities')
-          .where({ type: ENTITY_TYPES.TENANT }).select('*');
-          // 为每个承包人生成账簿, 并更新累计收入/支出
-          for (let entity of entities) {
-            let [account] = yield knex('accounts').where('entity_id', entity.id)
-            .select('*').then(casing.camelize);
-            if (!account) {
-              res.json(400, {
-                reason: `承包人${entity.name}账户尚未初始化`,
-              });
-              next();
-              return;
-            }
-            let vouchers = yield knex.where('vouchers.account_term_id', id)
-            .where(function () {
-              this.where('vouchers.payer_id', entity.id)
-              .orWhere('vouchers.recipient_id', entity.id);
-            })
-            .join('voucher_subjects', 'vouchers.voucher_subject_id',
-                  'voucher_subjects.id')
-            .join('voucher_types', 'vouchers.voucher_type_id',
-                  'voucher_types.id')
-            .join('entities as payers', 'payers.id', 'vouchers.payer_id')
-            .join('entities as recipients', 'recipients.id',
-                  'vouchers.recipient_id')
-            .orderBy('vouchers.date', 'desc').select([
-              ...Object.keys(voucherDef).map(it => 'vouchers.' + it),
-              ...Object.keys(voucherSubjectDef)
-              .map(it => `voucher_subjects.${it} as voucher_subject__${it}`),
-              ...Object.keys(voucherTypeDef)
-              .map(it => `voucher_types.${it} as voucher_type__${it}`),
-              'payers.name as payer__name', 'recipients.name as recipient__name'
-            ])
-            .from('vouchers')
-            .then(R.map(R.pipe(layerify, casing.camelize)));
-            yield trx('account_books').insert({
-              account_term_id: id,
-              entity_id: entity.id,
-              def: JSON.stringify(makeAccountBook(
-                { account: account, vouchers, entityId: entity.id }
-              ))
-            });
-            let thisMonthExpense = 0;
-            let thisMonthIncome = 0;
-            for (let voucher of vouchers) {
-              if (voucher.payerId == entity.id) {
-                thisMonthExpense += voucher.amount;
-              } else if (voucher.recipientId == entity.id) {
-                thisMonthIncome += voucher.amount;
-              }
-            }
-            yield trx('accounts').where('entity_id', entity.id)
-            .increment('income', thisMonthIncome)
-            .increment('expense', thisMonthExpense);
-          }
+          yield *authenticateInvoices(trx);
+          yield *makeAccountBooks(trx, id);
+          yield *makeOperatingReports(trx, id);
           yield trx('account_terms').update({ closed: true })
           .where({ id });
         }

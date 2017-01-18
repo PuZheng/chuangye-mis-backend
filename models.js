@@ -248,6 +248,13 @@ exports.payment_records = {
   voucher_id: t => t.integer('voucher_id').references('vouchers.id'),
 };
 
+exports.operating_reports = {
+  id: t => t.increments(),
+  account_term_id: t => t.integer('account_term_id')
+  .references('account_terms.id').notNullable(),
+  def: t => t.jsonb('def'),
+};
+
 exports.accounts = {
   id: t => t.increments(),
   entity_id: t => t.integer('entity_id').references('entities.id')
@@ -255,5 +262,6 @@ exports.accounts = {
   income: t => t.float('income', 12, 2).notNullable(),
   expense: t => t.float('expense', 12, 2).notNullable(),
   // 内部抵税结转额
-  tax_offset_balance: t => t.float('tax_offset_balance', 12, 3).notNullable().defaultTo(0),
+  tax_offset_balance: t => t.float('tax_offset_balance', 12, 3)
+  .notNullable().defaultTo(0),
 };
