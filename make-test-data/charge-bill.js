@@ -12,7 +12,8 @@ var chance = require('chance');
 var C = new chance();
 
 if (!argv.t) {
-  console.log('请指定的账期');
+  console.log('请指定账期');
+  process.exit(-1);
 }
 
 co(function *() {
@@ -20,6 +21,7 @@ co(function *() {
   .select('*');
   if (!accountTerm) {
     console.log('账期不存在');
+    return;
   }
   let { sheets } = yield chargeBillDef();
   for (let { grid } of sheets) {

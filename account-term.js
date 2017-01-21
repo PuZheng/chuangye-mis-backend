@@ -8,10 +8,12 @@ var {
   account_terms: objDef,
   vouchers: voucherDef,
   voucher_subjects: voucherSubjectDef,
-  voucher_types: voucherTypeDef
+  voucher_types: voucherTypeDef,
+  accounts: accountDef,
+  tenants: tenantDef,
 } = require('./models');
 var co = require('co');
-var { INVOICE_ACTIONS, ENTITY_TYPES, PAYMENT_RECORD_STATES } =
+var { INVOICE_ACTIONS, PAYMENT_RECORD_STATES } =
   require('./const');
 var { sm } = require('./invoice');
 var layerify = require('./utils/layerify');
@@ -157,15 +159,14 @@ var authenticateInvoices = function *(trx, accountTermId) {
 
 // 为每个承包人生成账簿, 并更新累计收入/支出
 var makeAccountBooks = function *(trx, accountTermId) {
-  let entities = yield trx('entities')
-  .where({ type: ENTITY_TYPES.TENANT }).select('*');
-  for (let entity of entities) {
-    let [account] = yield knex('accounts').where('entity_id', entity.id)
+  let tenants = yield trx('tenants').select('*');
+  for (let tenant of tenants) {
+    let [account] = yield knex('accounts').where('tenant_id', tenant.id)
     .select('*').then(casing.camelize);
     let vouchers = yield knex.where('vouchers.account_term_id', accountTermId)
     .where(function () {
-      this.where('vouchers.payer_id', entity.id)
-      .orWhere('vouchers.recipient_id', entity.id);
+      this.where('vouchers.payer_id', tenant.entityId)
+      .orWhere('vouchers.recipient_id', tenant.entityId);
     })
     .join('voucher_subjects', 'vouchers.voucher_subject_id', 'voucher_subjects.id')
     .join('voucher_types', 'vouchers.voucher_type_id', 'voucher_types.id')
@@ -184,26 +185,28 @@ var makeAccountBooks = function *(trx, accountTermId) {
     .then(R.map(R.pipe(layerify, casing.camelize)));
     yield trx('account_books').insert({
       account_term_id: accountTermId,
-      entity_id: entity.id,
+      tenant_id: tenant.id,
       def: JSON.stringify(makeAccountBook(
-        { account: account, vouchers, entityId: entity.id }
+        { account: account, vouchers, entityId: tenant.entityId }
       ))
     });
     let thisMonthExpense = 0;
     let thisMonthIncome = 0;
     for (let voucher of vouchers) {
-      if (voucher.payerId == entity.id) {
+      if (voucher.payerId == tenant.entityId) {
         thisMonthExpense += voucher.amount;
-      } else if (voucher.recipientId == entity.id) {
+      } else if (voucher.recipientId == tenant.entityId) {
         thisMonthIncome += voucher.amount;
       }
     }
-    yield trx('accounts').where('entity_id', entity.id)
+    yield trx('accounts').where('tenant_id', tenant.id)
     .increment('income', thisMonthIncome)
     .increment('expense', thisMonthExpense);
   }
 };
 
+
+// 生成经营报告， 并且修改用户抵税结转额
 var makeOperatingReports = function *(trx, accountTermId) {
   let header = {
     readonly: true,
@@ -213,12 +216,103 @@ var makeOperatingReports = function *(trx, accountTermId) {
       fontWeight: 'bold',
     }
   };
-  let row0 = [
+  let invoices = yield trx('invoices').where({ account_term_id: accountTermId })
+  .select('*').then(casing.camelize);
+  let [{ value: 当前税率}] = yield trx('settings').where('name', '增值税率')
+  .select('value');
+  let taxRateCell = {
+    val: 当前税率,
+    label: '当前税率',
+    readonly: true
+  };
+  let row0 = [Object.assign({
+    val: '当前税率',
+  }, header), taxRateCell];
+  let row1 = [
     '车间', '销售额', '应抵', '上月结转', '经营费用发生', '进项发生', '差额'
   ]
   .map(it => Object.assign({
     val: it
   }, header));
+  let grid = [
+    row0, row1
+  ];
+  let tenants = yield trx('tenants')
+  .join('accounts', 'accounts.tenant_id', 'tenants.id')
+  .select(
+    ...Object.keys(tenantDef).map(it => 'tenants.' + it),
+    ...Object.keys(accountDef).map(it => `accounts.${it} as account__${it}`)
+  )
+  .then(R.map(R.pipe(layerify, casing.camelize)));
+  let paymentRecords = yield trx('payment_records')
+  .where({ account_term_id: accountTermId }).select('*').then(casing.camelize);
+  for (let tenant of tenants) {
+    let nameCell = {
+      val: tenant.name,
+      readonly: true,
+    };
+    // 销售额是当期销项发票之和
+    let 销售额 = R.sum(
+      R.find(
+        R.and(R.propEq('vendorId', tenant.entityId), R.prop('isVat'))
+      )(invoices).map(R.prop('amount'))
+    );
+    let 销售额Cell = {
+      val: 销售额,
+      readonly: true,
+      label: tenant.id + '-销售额',
+    };
+    let 应抵 = 销售额 * 当前税率 / (1 + 当前税率);
+    let 应抵Cell = {
+      readonly: true,
+      val: `=@{${销售额Cell.label}} * @{${taxRateCell.label}} / (1 + @{${taxRateCell.label}})`,
+      format: '%.2f',
+      label: tenant.id + '-应抵',
+    };
+    let 上月结转Cell = {
+      readonly: true,
+      val: tenant.account.taxOffsetBalance,
+      label: tenant.id + '-上月结转',
+    };
+    let 经营费用发生 = R.sum(R.find(
+      R.and(R.propEq('status', PAYMENT_RECORD_STATES.PASSED),
+            R.propEq('departmentId', tenant.departmentId))
+    )(paymentRecords).map(R.prop('tax')));
+    let 经营费用发生Cell = {
+      readonly: true,
+      val: 经营费用发生,
+      format: '%.2f',
+      label: tenant.id + '-经营费用发生',
+    };
+    // 进项额是当期进项发票之和
+    let 进项额 = R.sum(R.find(
+      R.and(R.prop('isVat'), R.propEq('purchaserId', tenant.id))
+    )(invoices).map(R.prop('amount')));
+    let 进项发生 = 进项额 * 当前税率 / (1 + 当前税率);
+    let 进项发生Cell = {
+      readonly: true,
+      val: `=${进项额} * @{${taxRateCell.label}} / (1 + @{${taxRateCell.label}})`,
+      format: '%.2f',
+      label: tenant.id + '-进项发生',
+    };
+    let 差额 = tenant.account.taxOffsetBalance + 进项发生 + 经营费用发生 - 应抵;
+    let 差额Cell = {
+      readonly: true,
+      /* eslint-disable max-len */
+      val: `=(@{${上月结转Cell.label}} + @{${进项发生Cell.label}} + @{${经营费用发生Cell.label}}) - @{${应抵Cell.label}}`,
+      /* eslint-enable max-len */
+      format: '%.2f'
+    };
+    grid.push([
+      nameCell, 销售额Cell, 应抵Cell, 上月结转Cell, 经营费用发生Cell, 进项发生Cell, 差额Cell,
+    ]);
+    yield trx('accounts').where('tenant_id', tenant.id).update({ taxOffsetBalance: 差额 });
+  }
+  let def = { sheets: [{ grid }] };
+  yield trx('operating_reports').insert({
+    account_term_id: accountTermId,
+    def,
+  });
 };
 
 router.post(
@@ -270,4 +364,6 @@ router.post(
 module.exports = {
   router,
   getObject,
+  makeAccountBooks,
+  makeOperatingReports
 };

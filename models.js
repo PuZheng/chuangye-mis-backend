@@ -223,12 +223,12 @@ exports.department_charge_bills = {
   '': t => t.unique(['department_id', 'account_term_id'])
 };
 
-// 收支清单
+// 收支清单(支付凭证清单)
 exports.account_books = {
   id: t => t.increments(),
   account_term_id: t => t.integer('account_term_id')
   .references('account_terms.id').notNullable(),
-  entity_id: t => t.integer('entity_id').references('entities.id'),
+  tenant_id: t => t.integer('tenant_id').references('tenants.id'),
   def: t => t.jsonb('def'),
   '': t => t.unique(['account_term_id', 'entity_id']),
 };
@@ -257,7 +257,7 @@ exports.operating_reports = {
 
 exports.accounts = {
   id: t => t.increments(),
-  entity_id: t => t.integer('entity_id').references('entities.id')
+  tenant_id: t => t.integer('tenant_id').references('tenants.id')
   .notNullable(),
   income: t => t.float('income', 12, 2).notNullable(),
   expense: t => t.float('expense', 12, 2).notNullable(),
