@@ -230,7 +230,7 @@ exports.account_books = {
   .references('account_terms.id').notNullable(),
   tenant_id: t => t.integer('tenant_id').references('tenants.id'),
   def: t => t.jsonb('def'),
-  '': t => t.unique(['account_term_id', 'entity_id']),
+  '': t => t.unique(['account_term_id', 'tenant_id']),
 };
 
 // 预扣费记录

@@ -22,7 +22,7 @@ co(function *() {
   );
   let accountTerms = yield knex('account_terms').select('*');
 
-  let rows = R.range(0, 1024).map(function () {
+  let rows = R.range(0, 4096).map(function () {
     let voucherType = chance.pickone(voucherTypes);
     let voucherSubject = chance.pickone(voucherSubjects);
     let accountTerm = chance.pickone(accountTerms);

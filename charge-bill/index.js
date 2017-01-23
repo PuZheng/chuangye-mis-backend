@@ -76,19 +76,7 @@ router.post(
           return;
         }
         yield createDepartmentChargeBills(trx, chargeBill);
-        // modify each meter reading's value
-        for (let sheet of chargeBill.def.sheets) {
-          for (let row of sheet.grid.filter(
-            it => !R.isArrayLike(it) && it.data.tag == 'meter'
-          )) {
-            for (let cell of row.cells) {
-              if (R.path(['data', 'tag'])(cell) == 'meter-reading') {
-                yield trx('meter_readings').update({ value: cell.val })
-                .where({ id: cell.data.id });
-              }
-            }
-          }
-        }
+        yield updateMeterReadings(trx, chargeBill);
         yield trx('charge_bills').update('closed', true).where({id});
         res.json({});
         next();
@@ -100,6 +88,22 @@ router.post(
     });
   }
 );
+
+// modify each meter reading's value
+var updateMeterReadings = function *(trx, chargeBill) {
+  for (let sheet of chargeBill.def.sheets) {
+    for (let row of sheet.grid.filter(
+      it => !R.isArrayLike(it) && it.data.tag == 'meter'
+    )) {
+      for (let cell of row.cells) {
+        if (R.path(['data', 'tag'])(cell) == 'meter-reading') {
+          yield trx('meter_readings').update({ value: cell.val })
+          .where({ id: cell.data.id });
+        }
+      }
+    }
+  }
+};
 
 var list = function (req, res, next) {
   let q = knex('charge_bills');
@@ -165,6 +169,7 @@ var searchCells = function searchCell(fragment, test) {
   );
 };
 
+// 生成部门费用清单以及预支付记录
 var createDepartmentChargeBills = function *(trx, chargeBill) {
   let { def: { sheets }, accountTermId } = chargeBill;
   let 电表Sheet = R.find(R.propEq('label', METER_TYPES.电表))(sheets);
@@ -314,4 +319,5 @@ var createDepartmentChargeBills = function *(trx, chargeBill) {
 module.exports = {
   router,
   createDepartmentChargeBills,
+  updateMeterReadings
 };

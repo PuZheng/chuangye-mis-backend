@@ -74,27 +74,30 @@ var makeAccountBook = function ({ vouchers, account, entityId }) {
       fontWeight: 'bold',
     }
   };
+  let makeHeader = function (s) {
+    return Object.assign({ val: s }, header);
+  };
+  let 上月底累计收入Cell = {
+    val: account.income,
+    readonly: true,
+    label: '上月底累计收入',
+  };
+  let 上月底累计支出Cell = {
+    val: account.expense,
+    readonly: true,
+    label: '上月底累计支出',
+  };
+  let 上月底结存Cell = {
+    val: `=@{${上月底累计收入Cell.label}} - @{${上月底累计支出Cell.label}}`,
+    readonly: true,
+  };
   let row0 = [
-    Object.assign({
-      val: '截至上月累计收入(元)'
-    }, header),
-    account.income,
-    Object.assign({
-      val: '截至上月累计支出(元)',
-    }, header),
-    account.expense,
-    Object.assign({
-      val: '上月结存',
-    }, header),
-    account.income - account.expense,
+    makeHeader('截至上月累计收入(元)'), 上月底累计收入Cell, makeHeader('截至上月累计支出(元)'),
+    上月底累计支出Cell, makeHeader('上月结存'), 上月底结存Cell,
   ];
   let row1 = [
-    '日期', '凭证号', '科目', '类型', '备注', '收入方', '支付方', '收入(元)', '支出(元)',
-  ].map(function (it) {
-    return Object.assign({
-      val: it,
-    }, header);
-  });
+    '日期', '凭证号', '科目', '类型', '收入方', '支付方', '收入(元)', '支出(元)', '备注',
+  ].map(makeHeader);
   let thisMonthExpense = 0;
   let thisMonthIncome = 0;
   let voucherRows = [];
@@ -105,32 +108,44 @@ var makeAccountBook = function ({ vouchers, account, entityId }) {
     thisMonthExpense += expense;
     voucherRows.push([
       moment(it.date).format('YYYY-MM'), it.number, it.voucherSubject.name,
-      it.voucherType.name, it.notes,
+      it.voucherType.name,
       it.recipient.name, it.payer.name,
-      income, expense
-    ]);
+      income, expense, it.notes,
+    ].map(it => ({
+      val: it,
+      readonly: true,
+    })));
   });
+  let 本月总收入Cell = {
+    val: thisMonthIncome,
+    readonly: true,
+    label: '本月总收入',
+  };
+  let 本月总支出Cell = {
+    val: thisMonthExpense,
+    readonly: true,
+    label: '本月总支出',
+  };
   let summaryRow = [
-    '总计', void 0, void 0, void 0, void 0, void 0, void 0,
-    thisMonthIncome, thisMonthExpense
-  ].map(function (it) {
-    return Object.assign({
-      val: it
-    }, header);
-  });
+    makeHeader('总计'), void 0, void 0, void 0, void 0, void 0, 本月总收入Cell, 本月总支出Cell
+  ];
+  let 本月底累计收入Cell = {
+    val: `=@{${上月底累计收入Cell.label}}+@{${本月总收入Cell.label}}`,
+    readonly: true,
+    label: '本月底累计收入',
+  };
+  let 本月底累计支出Cell = {
+    val: `=@{${上月底累计支出Cell.label}}+@{${本月总支出Cell.label}}`,
+    readonly: true,
+    label: '本月底累计支出',
+  };
+  let 本月结存Cell = {
+    val: `=@{${本月底累计收入Cell.label}}-@{${本月底累计支出Cell.label}}`,
+    readonly: true,
+  };
   let lastRow = [
-    Object.assign({
-      val: '本月底累计收入(元)',
-    }, header),
-    account.income + thisMonthIncome,
-    Object.assign({
-      val: '本月底累计支出(元)',
-    }, header),
-    account.expense + thisMonthExpense,
-    Object.assign({
-      val: '本月结存(元)',
-    }, header),
-    account.income + thisMonthIncome - (account.expense + thisMonthExpense)
+    makeHeader('本月底累计收入(元)'), 本月底累计收入Cell, makeHeader('本月底累计支出(元)'),
+    本月底累计支出Cell, makeHeader('本月结存(元)'), 本月结存Cell,
   ];
   return {
     sheets: [
@@ -159,7 +174,7 @@ var authenticateInvoices = function *(trx, accountTermId) {
 
 // 为每个承包人生成账簿, 并更新累计收入/支出
 var makeAccountBooks = function *(trx, accountTermId) {
-  let tenants = yield trx('tenants').select('*');
+  let tenants = yield trx('tenants').select('*').then(casing.camelize);
   for (let tenant of tenants) {
     let [account] = yield knex('accounts').where('tenant_id', tenant.id)
     .select('*').then(casing.camelize);
@@ -204,7 +219,6 @@ var makeAccountBooks = function *(trx, accountTermId) {
     .increment('expense', thisMonthExpense);
   }
 };
-
 
 // 生成经营报告， 并且修改用户抵税结转额
 var makeOperatingReports = function *(trx, accountTermId) {

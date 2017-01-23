@@ -25,7 +25,7 @@ var fullfill = function (obj) {
   return co(function *() {
     obj.entity = yield getEntity(obj.entityId);
     obj.department = yield getDepartment(obj.departmentId);
-    [obj.account] = yield knex('accounts').where({ entity_id: obj.entityId })
+    [obj.account] = yield knex('accounts').where({ tenant_id: obj.id })
     .select('*').then(casing.camelize);
     return obj;
   });
@@ -89,7 +89,7 @@ var fetchList = function (req, res, next) {
       q
       .whereNotExists(
         knex.select('id').from('accounts')
-        .whereRaw('tenants.entity_id = accounts.entity_id')
+        .whereRaw('tenants.id = accounts.tenant_id')
       );
     }
 
