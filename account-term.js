@@ -11,6 +11,8 @@ var {
   voucher_types: voucherTypeDef,
   accounts: accountDef,
   tenants: tenantDef,
+  entities: entityDef,
+  departments: departmentDef
 } = require('./models');
 var co = require('co');
 var { INVOICE_ACTIONS, PAYMENT_RECORD_STATES } =
@@ -243,7 +245,7 @@ var makeOperatingReports = function *(trx, accountTermId) {
     val: '当前税率',
   }, header), taxRateCell];
   let row1 = [
-    '车间', '销售额', '应抵', '上月结转', '经营费用发生', '进项发生', '差额'
+    '承包人', '车间', '上月结转', '销项', '应抵', '进项', '进项发生', '经营费用发生', '差额'
   ]
   .map(it => Object.assign({
     val: it
@@ -252,27 +254,35 @@ var makeOperatingReports = function *(trx, accountTermId) {
     row0, row1
   ];
   let tenants = yield trx('tenants')
+  .join('entities', 'entities.id', 'tenants.entity_id')
   .join('accounts', 'accounts.tenant_id', 'tenants.id')
+  .join('departments', 'departments.id', 'tenants.department_id')
   .select(
     ...Object.keys(tenantDef).map(it => 'tenants.' + it),
-    ...Object.keys(accountDef).map(it => `accounts.${it} as account__${it}`)
+    ...Object.keys(entityDef).map(it => `entities.${it} as entity__${it}`),
+    ...Object.keys(accountDef).map(it => `accounts.${it} as account__${it}`),
+    ...Object.keys(departmentDef).map(it => `departments.${it} as department__${it}`)
   )
   .then(R.map(R.pipe(layerify, casing.camelize)));
   let paymentRecords = yield trx('payment_records')
   .where({ account_term_id: accountTermId }).select('*').then(casing.camelize);
   for (let tenant of tenants) {
-    let nameCell = {
-      val: tenant.name,
+    let tenantNameCell = {
+      val: tenant.entity.name,
+      readonly: true,
+    };
+    let deparmentNameCell = {
+      val: tenant.department.name,
       readonly: true,
     };
     // 销售额是当期销项发票之和
     let 销售额 = R.sum(
-      R.find(
+      R.filter(
         R.and(R.propEq('vendorId', tenant.entityId), R.prop('isVat'))
       )(invoices).map(R.prop('amount'))
     );
     let 销售额Cell = {
-      val: 销售额,
+      val: String(销售额),
       readonly: true,
       label: tenant.id + '-销售额',
     };
@@ -288,7 +298,7 @@ var makeOperatingReports = function *(trx, accountTermId) {
       val: tenant.account.taxOffsetBalance,
       label: tenant.id + '-上月结转',
     };
-    let 经营费用发生 = R.sum(R.find(
+    let 经营费用发生 = R.sum(R.filter(
       R.and(R.propEq('status', PAYMENT_RECORD_STATES.PASSED),
             R.propEq('departmentId', tenant.departmentId))
     )(paymentRecords).map(R.prop('tax')));
@@ -299,13 +309,18 @@ var makeOperatingReports = function *(trx, accountTermId) {
       label: tenant.id + '-经营费用发生',
     };
     // 进项额是当期进项发票之和
-    let 进项额 = R.sum(R.find(
-      R.and(R.prop('isVat'), R.propEq('purchaserId', tenant.id))
+    let 进项额 = R.sum(R.filter(
+      R.and(R.prop('isVat'), R.propEq('purchaserId', tenant.entityId))
     )(invoices).map(R.prop('amount')));
+    let 进项Cell = {
+      val: String(进项额),
+      readonly: true,
+      label: tenant.id + '-进项额',
+    };
     let 进项发生 = 进项额 * 当前税率 / (1 + 当前税率);
     let 进项发生Cell = {
       readonly: true,
-      val: `=${进项额} * @{${taxRateCell.label}} / (1 + @{${taxRateCell.label}})`,
+      val: `=@{${进项Cell.label}} * @{${taxRateCell.label}} / (1 + @{${taxRateCell.label}})`,
       format: '%.2f',
       label: tenant.id + '-进项发生',
     };
@@ -318,9 +333,10 @@ var makeOperatingReports = function *(trx, accountTermId) {
       format: '%.2f'
     };
     grid.push([
-      nameCell, 销售额Cell, 应抵Cell, 上月结转Cell, 经营费用发生Cell, 进项发生Cell, 差额Cell,
+      tenantNameCell, deparmentNameCell, 上月结转Cell, 销售额Cell, 应抵Cell,
+      进项Cell, 进项发生Cell, 经营费用发生Cell, 差额Cell,
     ]);
-    yield trx('accounts').where('tenant_id', tenant.id).update({ taxOffsetBalance: 差额 });
+    yield trx('accounts').where('tenant_id', tenant.id).update({ tax_offset_balance: 差额 });
   }
   let def = { sheets: [{ grid }] };
   yield trx('operating_reports').insert({
