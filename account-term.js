@@ -35,8 +35,8 @@ router.get(
   function (req, res, next) {
     return knex('account_terms')
     .select('*')
-    .orderBy('name', 'desc')
     .then(function (list) {
+      list = R.sort(R.descend(it => moment(it.name, 'YYYY-MM')), list);
       res.json({ data: casing.camelize(list) });
       next();
     })
