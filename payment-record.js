@@ -188,4 +188,4 @@ router.post('/object/:id/:action', loginRequired, function (req, res, next) {
   });
 });
 
-module.exports = { router };
+module.exports = { router, sm };

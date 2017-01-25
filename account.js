@@ -9,11 +9,14 @@ var { VOUCHER_SUBJECTS, VOUCHER_TYPES } = require('./const');
 var router = new Router();
 
 var get = function get(req, res, next) {
-  let { entity_id } = req.params;
-  if (!entity_id) {
-    throw new Error('lack parameter entity_id');
+  let { tenant_id } = req.params;
+  if (!tenant_id) {
+    throw new Error('lack parameter tenant_id');
   }
   return co(function *() {
+    let [{ entity_id }] = yield knex('tenants').where({
+      id: tenant_id
+    });
     let [accountTerm] = yield knex('account_terms')
     .where('name', moment().format('YYYY-MM')).select('*');
     let thisMonthIncome = 0;
@@ -29,7 +32,7 @@ var get = function get(req, res, next) {
       .select(knex.raw('SUM(amount)'));
     }
     yield knex('accounts')
-    .where({ entity_id })
+    .where({ tenant_id })
     .then(function ([account]) {
       if (!account) {
         res.json(404, {});
@@ -57,7 +60,7 @@ var create = function (req, res, next) {
   // 这里对当月的收入/支出做特殊处理， 即增加一条特殊的收入/支出凭证,
   // 实际上并没有保存当月的收入/支出
   let { thisMonthIncome, thisMonthExpense, thisYearIncome,
-    thisYearExpense, entityId } = req.body;
+    thisYearExpense, tenantId } = req.body;
   return knex.transaction(function (trx) {
     return co(function *() {
       let [accountTerm] = yield trx('account_terms')
@@ -68,6 +71,9 @@ var create = function (req, res, next) {
         });
         next();
       }
+      let [{ entity_id: entityId }] = yield trx('tenants').where({
+        id: tenantId
+      }).select('*');
       let [voucherSubjectPresetExpense] = yield knex('voucher_subjects')
       .where('name', VOUCHER_SUBJECTS.PRESET_EXPENSE).select('*');
       let [ voucherSubjectPresetIncome ] = yield knex('voucher_subjects')
@@ -76,7 +82,7 @@ var create = function (req, res, next) {
       .where('name', VOUCHER_TYPES.CASH).select('*');
       let [ entity ] = yield knex('entities').where('id', entityId).select('*');
       yield trx('vouchers').insert({
-        number: entityId + '-' + VOUCHER_SUBJECTS.PRESET_EXPENSE,
+        number: VOUCHER_SUBJECTS.PRESET_EXPENSE + '-承包人ID' + tenantId,
         amount: thisMonthExpense,
         date: new Date(),
         voucher_type_id: voucherTypeCash.id,
@@ -87,7 +93,7 @@ var create = function (req, res, next) {
         account_term_id: accountTerm.id,
       });
       yield trx('vouchers').insert({
-        number: entityId + '-' + VOUCHER_SUBJECTS.PRESET_INCOME,
+        number: VOUCHER_SUBJECTS.PRESET_INCOME + '-承包人ID' + tenantId,
         amount: thisMonthIncome,
         date: new Date(),
         voucher_type_id: voucherTypeCash.id,
@@ -97,10 +103,10 @@ var create = function (req, res, next) {
         creator_id: req.user.id,
         account_term_id: accountTerm.id,
       });
-      yield knex('accounts')
+      yield trx('accounts')
       .insert({
         income: thisYearIncome, expense: thisYearExpense,
-        entity_id: entityId
+        tenant_id: tenantId
       })
       .returning('id')
       .then(function ([id]) {

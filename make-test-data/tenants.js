@@ -44,7 +44,7 @@ var makeTenants = function () {
       }
     );
     let entityIds = yield knex.batchInsert('entities', rows).returning('id');
-    yield knex.batchInsert(
+    let tenantIds = yield knex.batchInsert(
       'tenants', R.zipWith(function (department, entitiyId) {
         return {
           department_id: department.id,
@@ -52,12 +52,13 @@ var makeTenants = function () {
           contact: '1' + chance.string({ pool: '1234567890', length: '10' }),
         };
       }, departments, entityIds)
-    );
+    ).returning('id');
+
     yield knex.batchInsert(
-      'accounts', entityIds.map(function (entityId) {
+      'accounts', tenantIds.map(function (tenantId) {
         let income = chance.integer({ min: 10000, max: 100000 });
         return {
-          entity_id: entityId,
+          tenant_id: tenantId,
           income,
           expense: income - chance.integer({ min: -1000, max: income }),
         };
@@ -69,8 +70,9 @@ var makeTenants = function () {
 module.exports = makeTenants;
 
 if (require.main === module) {
+  logger.info('creating tenants...');
   makeTenants().then(function () {
-    logger.info('tenants completed');
+    logger.info('DONE');
     knex.destroy();
   }, function (e) {
     logger.error(e);

@@ -145,8 +145,8 @@ var createMeterReadingTypes = function *(trx) {
 var createSettings = function (trx) {
   var rows = [
     // 一般
-    [ '上浮单价', '0.2' ],
-    [ '增值税率', '0.17', '', SETTING_GROUPS.增值税率 ],
+    [ '上浮单价', '0.2', '', SETTING_GROUPS.一般 ],
+    [ '增值税率', '0.17', '', SETTING_GROUPS.一般 ],
     // power
     [ '尖峰电价', '1.123', '元/度', SETTING_GROUPS.电费],
     [ '低谷电价', '0.457', '元/度', SETTING_GROUPS.电费],

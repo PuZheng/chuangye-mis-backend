@@ -29,7 +29,7 @@
     "mz": "^2.4.0",
     "pg": "^6.1.0",
     "pg-promise": "^5.2.7",
-    "ramda": "^0.22.1",
+    "ramda": "^0.23.0",
     "restify": "^4.1.1",
     "restify-jwt": "^0.4.0",
     "restify-router": "^0.2.1"
