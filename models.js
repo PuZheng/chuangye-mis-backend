@@ -83,7 +83,7 @@ exports.invoices = {
   purchaser_id: t => t.integer('purchaser_id').references('entities.id'),
   notes: t => t.string('notes'),
   creator_id: t => t.integer('creator_id').references('users.id'),
-  amount: t => t.integer('amount').notNullable(), // 金额
+  amount: t => t.specificType('amount', 'double precision').notNullable(), // 金额
   tax_rate: t => t.integer('tax_rate'), // 有可能不牵扯到税额
   status: t => t.string('status').defaultTo(INVOICE_STATES.UNAUTHENTICATED)
 };
@@ -107,7 +107,7 @@ exports.voucher_types = {
 exports.vouchers = {
   id: t => t.increments(),
   number: t => t.string('number').notNullable().unique(),
-  amount: t => t.integer('amount').notNullable(),
+  amount: t => t.specificType('amount', 'double precision').notNullable(),
   date: t => t.date('date'),
   voucher_type_id: t => t.integer('voucher_type_id')
   .references('voucher_types.id'),
@@ -142,7 +142,7 @@ exports.store_orders = {
   store_subject_id: t => t.integer('store_subject_id')
   .references('store_subjects.id'),
   quantity: t => t.float('quantity'),
-  unit_price: t => t.float('unit_price', 2),
+  unit_price: t => t.float('unit_price'),
   invoice_id: t => t.integer('invoice_id').references('invoices.id'),
   direction: t => t.enum('direction', R.values(STORE_ORDER_DIRECTIONS))
   .notNullable(),
@@ -242,8 +242,8 @@ exports.payment_records = {
   status: t => t.enum('status', R.values(PAYMENT_RECORD_STATES))
   .defaultTo(PAYMENT_RECORD_STATES.UNPROCESSED),
   created: t => t.timestamp('created').defaultTo(knex.fn.now()),
-  amount: t => t.float('amount', 12, 2).notNullable(), // 金额
-  tax: t => t.float('tax', 12, 2).notNullable(),
+  amount: t => t.specificType('amount', 'double precision').notNullable(), // 金额
+  tax: t => t.specificType('tax', 'double precision').notNullable(),
   type: t => t.enum('type', R.values(PAYMENT_RECORD_TYPES)).notNullable(),
   voucher_id: t => t.integer('voucher_id').references('vouchers.id'),
 };
@@ -259,9 +259,9 @@ exports.accounts = {
   id: t => t.increments(),
   tenant_id: t => t.integer('tenant_id').references('tenants.id')
   .notNullable(),
-  income: t => t.float('income', 12, 2).notNullable(),
-  expense: t => t.float('expense', 12, 2).notNullable(),
+  income: t => t.specificType('income', 'double precision').notNullable(),
+  expense: t => t.specificType('expense', 'double precision').notNullable(),
   // 内部抵税结转额
-  tax_offset_balance: t => t.float('tax_offset_balance', 12, 3)
+  tax_offset_balance: t => t.specificType('tax_offset_balance', 'double precision')
   .notNullable().defaultTo(0),
 };

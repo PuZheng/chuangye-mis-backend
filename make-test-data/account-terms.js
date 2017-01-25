@@ -5,13 +5,8 @@ var knex = require('../knex');
 
 var makeAccountTerms = function () {
   var accountTerms = [
-    ['2016-04', false],
-    ['2016-05', false],
-    ['2016-06', false],
-    ['2016-07', false],
-    ['2016-08', false],
-    ['2016-09', false],
-    ['2016-10', false],
+    ['2016-11', false],
+    ['2016-12', false],
   ];
 
   return knex.batchInsert('account_terms', accountTerms.map(

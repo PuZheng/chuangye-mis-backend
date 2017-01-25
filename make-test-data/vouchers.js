@@ -7,8 +7,11 @@ var moment = require('moment');
 var co = require('co');
 var R = require('ramda');
 var { ROLES } = require('../const');
+var argv = require('yargs').argv;
 
 var chance = new Chance();
+
+let n = Number(argv.n || 8192);
 
 co(function *() {
   let voucherTypes = casing.camelize(yield knex('voucher_types').select('*'));
@@ -22,7 +25,7 @@ co(function *() {
   );
   let accountTerms = yield knex('account_terms').select('*');
 
-  let rows = R.range(0, 4096).map(function () {
+  let rows = R.range(0, n).map(function () {
     let voucherType = chance.pickone(voucherTypes);
     let voucherSubject = chance.pickone(voucherSubjects);
     let accountTerm = chance.pickone(accountTerms);

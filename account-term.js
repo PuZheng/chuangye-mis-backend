@@ -66,7 +66,7 @@ router.post(
   }
 );
 
-// 创建承包人收支明细表
+// 创建承包人收支明细表(即资金流凭证明细)
 var makeAccountBook = function ({ vouchers, account, entityId }) {
   let header = {
     readonly: true,
@@ -222,7 +222,7 @@ var makeAccountBooks = function *(trx, accountTermId) {
   }
 };
 
-// 生成经营报告， 并且修改用户抵税结转额
+// 生成经营报告(销项，进项， 应抵等信息，根据发票)， 并且修改用户抵税结转额
 var makeOperatingReports = function *(trx, accountTermId) {
   let header = {
     readonly: true,
@@ -278,7 +278,7 @@ var makeOperatingReports = function *(trx, accountTermId) {
     // 销售额是当期销项发票之和
     let 销售额 = R.sum(
       R.filter(
-        R.and(R.propEq('vendorId', tenant.entityId), R.prop('isVat'))
+        it => it.vendorId == tenant.entityId && it.isVat
       )(invoices).map(R.prop('amount'))
     );
     let 销售额Cell = {
@@ -286,7 +286,8 @@ var makeOperatingReports = function *(trx, accountTermId) {
       readonly: true,
       label: tenant.id + '-销售额',
     };
-    let 应抵 = 销售额 * 当前税率 / (1 + 当前税率);
+    // never use +
+    let 应抵 = 销售额 * 当前税率 / R.add(1, 当前税率);
     let 应抵Cell = {
       readonly: true,
       val: `=@{${销售额Cell.label}} * @{${taxRateCell.label}} / (1 + @{${taxRateCell.label}})`,
@@ -295,7 +296,7 @@ var makeOperatingReports = function *(trx, accountTermId) {
     };
     let 上月结转Cell = {
       readonly: true,
-      val: tenant.account.taxOffsetBalance,
+      val: String(tenant.account.taxOffsetBalance || 0),
       label: tenant.id + '-上月结转',
     };
     let 经营费用发生 = R.sum(R.filter(
@@ -310,21 +311,22 @@ var makeOperatingReports = function *(trx, accountTermId) {
     };
     // 进项额是当期进项发票之和
     let 进项额 = R.sum(R.filter(
-      R.and(R.prop('isVat'), R.propEq('purchaserId', tenant.entityId))
+      it => it.isVat && it.purchaserId == tenant.entityId
     )(invoices).map(R.prop('amount')));
     let 进项Cell = {
       val: String(进项额),
       readonly: true,
       label: tenant.id + '-进项额',
     };
-    let 进项发生 = 进项额 * 当前税率 / (1 + 当前税率);
+    let 进项发生 = 进项额 * 当前税率 / R.add(1, 当前税率);
     let 进项发生Cell = {
       readonly: true,
       val: `=@{${进项Cell.label}} * @{${taxRateCell.label}} / (1 + @{${taxRateCell.label}})`,
       format: '%.2f',
       label: tenant.id + '-进项发生',
     };
-    let 差额 = tenant.account.taxOffsetBalance + 进项发生 + 经营费用发生 - 应抵;
+    console.log(tenant.account.taxOffsetBalance, 进项发生, 经营费用发生, 应抵);
+    let 差额 = R.add(R.add(tenant.account.taxOffsetBalance, 进项发生), 经营费用发生) - 应抵;
     let 差额Cell = {
       readonly: true,
       /* eslint-disable max-len */
@@ -364,7 +366,7 @@ router.post(
             return;
           }
           let [ { count: unprocessedPaymentRecordCnt } ] =
-            yield knex('payment_records').where({ account_term_id: id })
+            yield trx('payment_records').where({ account_term_id: id })
           .andWhere({ status: PAYMENT_RECORD_STATES.UNPROCESSED })
           .count();
           if (Number(unprocessedPaymentRecordCnt) > 0) {
@@ -374,9 +376,9 @@ router.post(
             next();
             return;
           }
-          yield *authenticateInvoices(trx);
-          yield *makeAccountBooks(trx, id);
-          yield *makeOperatingReports(trx, id);
+          yield authenticateInvoices(trx, id);
+          yield makeAccountBooks(trx, id);
+          yield makeOperatingReports(trx, id);
           yield trx('account_terms').update({ closed: true })
           .where({ id });
         }

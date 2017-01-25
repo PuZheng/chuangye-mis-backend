@@ -2,9 +2,12 @@
 var knex = require('../knex');
 var R = require('ramda');
 var logger = require('../logger.js');
+var argv = require('yargs').argv;
+
+let n = Number(argv.n || 100);
 
 var makeDepartments = function () {
-  var rows = R.range(0, 100).map(function (i) {
+  var rows = R.range(0, n).map(function (i) {
     return {
       name: '车间' + i,
       acronym: 'cj' + i,

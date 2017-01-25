@@ -6,6 +6,8 @@ var casing = require('casing');
 var knex = require('../knex');
 var co = require('co');
 var { ROLES } = require('../const');
+var argv = require('yargs').argv;
+let n = Number(argv.n || 8192);
 
 var makeInvoices = function () {
   let chance = new Chance();
@@ -15,7 +17,7 @@ var makeInvoices = function () {
     let accountTerms = casing.camelize(yield knex('account_terms').select('*'));
     let accountants = yield knex('users').select('*')
     .where('role', ROLES.ACCOUNTANT);
-    let rows = R.range(0, 512).map(function () {
+    let rows = R.range(0, n).map(function () {
       let invoiceType = chance.pickone(invoiceTypes);
       let accountTerm = chance.pickone(accountTerms);
       let [year, month] = accountTerm.name.split('-');

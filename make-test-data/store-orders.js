@@ -55,17 +55,15 @@ var makeStoreOrders = function () {
           R.propEq('type', ENTITY_TYPES.CUSTOMER)
         ));
       }
-      let date = C.date({ year: 2016, month: C.pickone([3, 4, 5, 6, 7, 8]) });
-      let [{ id: account_term_id }] = accountTerms.filter(
-        it => it.name == moment(date).format('YYYY-MM')
-      );
+      let accountTerm = C.pickone(accountTerms);
+      let date = moment(accountTerm.name, 'YYYY-MM');
       return {
         store_subject_id: storeSubject.id,
         quantity,
         unit_price,
         direction,
         date,
-        account_term_id,
+        account_term_id: accountTerm.id,
         department_id: C.pickone(departments).id,
         invoice_id: invoice && invoice.id,
         number: C.string({ pool: '1234567890' }),
