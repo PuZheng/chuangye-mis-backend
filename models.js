@@ -24,6 +24,7 @@ exports.voucher_subjects = {
   recipient_type: t => t.string('recipient_type', R.values(ENTITY_TYPES)),
   is_public: t => t.boolean('is_public'),
   notes: t => t.string('notes'),
+  reserved: t => t.boolean('reserved').defaultTo(false), // 是否系统保留
 };
 
 

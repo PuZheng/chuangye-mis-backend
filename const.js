@@ -60,8 +60,9 @@ exports.INVOICE_ACTIONS = {
 const VOUCHER_SUBJECTS = {
   PRESET_INCOME: '系统预设收入',
   PRESET_EXPENSE: '系统预设支出',
+  强制补足抵税: '强制补足抵税',
   原材料开支: '原材料开支',
-  水电煤气开支: '水电煤气开支'
+  水电煤气开支: '水电煤气开支',
 };
 exports.VOUCHER_SUBJECTS = VOUCHER_SUBJECTS;
 

@@ -20,7 +20,7 @@ var getObject = function getObject(id) {
 
 var fetchList = function (req, res, next) {
   let q = knex('voucher_subjects');
-  let { kw, payer_type, recipient_type, only_public } = req.params;
+  let { kw, payer_type, recipient_type, only_public, only_unreserved } = req.params;
 
   if (kw) {
     kw = kw.toUpperCase();
@@ -30,6 +30,7 @@ var fetchList = function (req, res, next) {
   payer_type && q.where({ payer_type });
   recipient_type && q.where({ recipient_type });
   only_public == '1' && q.where({ is_public: true });
+  only_unreserved == '1' && q.where({ reserved: false });
 
   q.select('*')
   .then(function (list) {
@@ -44,11 +45,12 @@ var fetchList = function (req, res, next) {
 router.get('/list', loginRequired, restify.queryParser(), fetchList);
 
 var getHints = function (req, res, next) {
-  let { kw } = req.params;
-  knex('voucher_subjects')
-  .where('name', 'like', kw + '%')
-  .orWhereRaw('UPPER(acronym) like ?', kw.toUpperCase() + '%')
-  .select('name', 'acronym')
+  let { kw, only_unreserved } = req.params;
+  let q = knex('voucher_subjects').where('name', 'like', kw + '%')
+  .orWhereRaw('UPPER(acronym) like ?', kw.toUpperCase() + '%');
+  only_unreserved == '1' && q.where('reserved', false);
+
+  q.select('name', 'acronym')
   .then(function (list) {
     res.json({
       data: list.map(function (obj) {

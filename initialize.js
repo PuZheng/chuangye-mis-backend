@@ -36,20 +36,22 @@ var createVoucherTypes = function (trx) {
 var createVoucherSubjects = function (trx) {
   return trx.batchInsert('voucher_subjects', [
     [VOUCHER_SUBJECTS.PRESET_EXPENSE, 'xtyszc', ENTITY_TYPES.TENANT, null, true,
-      '用于初始化账户时，预设的当月支出'],
+      '用于初始化账户时，预设的当月支出', true],
     [VOUCHER_SUBJECTS.PRESET_INCOME, 'xtyszc', null, ENTITY_TYPES.TENANT, true,
-      '用于初始化账户时，预设的当月收入'],
+      '用于初始化账户时，预设的当月收入', true],
     [ '应收货款', 'yshk', ENTITY_TYPES.CUSTOMER, ENTITY_TYPES.TENANT, true ],
     [ '应付货款', 'yfhk', ENTITY_TYPES.TENANT, ENTITY_TYPES.SUPPLIER, true ],
     [VOUCHER_SUBJECTS.原材料开支, 'yclkz', ENTITY_TYPES.TENANT,
       ENTITY_TYPES.OWNER, false, '承包人原材料开支'],
     [VOUCHER_SUBJECTS.水电煤气开支, 'sdmqkz', ENTITY_TYPES.TENANT,
-      ENTITY_TYPES.OWNER, false, '承包人水电煤气开支']
+      ENTITY_TYPES.OWNER, false, '承包人水电煤气开支'],
+    [VOUCHER_SUBJECTS.强制补足抵税, 'qzbzds', ENTITY_TYPES.TENANT,
+      ENTITY_TYPES.OWNEr, false, '', true],
   ].map(function (
-    [name, acronym, payer_type, recipient_type, is_public, notes]
+    [name, acronym, payer_type, recipient_type, is_public, notes, reserved]
   ) {
     return {
-      name, acronym, payer_type, recipient_type, is_public, notes
+      name, acronym, payer_type, recipient_type, is_public, notes, reserved
     };
   }));
 };
