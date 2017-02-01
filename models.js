@@ -134,7 +134,7 @@ exports.tenants = {
   entity_id: t => t.integer('entity_id').references('entities.id')
   .notNullable(),
   contact: t => t.string('contact'),
-  department_id: t => t.integer('department_id').references('departments.id')
+  department_id: t => t.integer('department_id').references('departments.id').unique()
 };
 
 exports.store_orders = {

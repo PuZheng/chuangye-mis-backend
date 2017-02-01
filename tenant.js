@@ -8,6 +8,14 @@ var getEntity = require('./entity').getObject;
 var getDepartment = require('./department').getObject;
 var { ENTITY_TYPES } = require('./const');
 var R = require('ramda');
+var moment = require('moment');
+var { VOUCHER_SUBJECTS, VOUCHER_TYPES } = require('./const');
+var {
+  tenants: tenantDef,
+  entities: entityDef,
+  accounts: accountDef,
+} = require('./models');
+var layerify = require('./utils/layerify');
 
 var router = new Router();
 
@@ -32,14 +40,35 @@ var fullfill = function (obj) {
 };
 
 router.get('/object/:id', loginRequired, function (req, res, next) {
-  knex('tenants')
-  .select('*')
-  .where('id', req.params.id)
-  .then(function ([tenant]) {
-    return fullfill(casing.camelize(tenant));
-  })
-  .then(function (tenant) {
-    res.json(tenant);
+  return co(function *() {
+    let [obj] = yield knex('tenants')
+    .join('entities', 'entities.id', 'tenants.entity_id')
+    .join('accounts', 'accounts.tenant_id', 'tenants.id')
+    .where('tenants.id', req.params.id)
+    .select(
+      ...Object.keys(tenantDef).map(function (k) {
+        return `tenants.${k} as ${k}`;
+      }),
+      ...Object.keys(entityDef).map(function (k) {
+        return `entities.${k} as entity__${k}`;
+      }),
+      ...Object.keys(accountDef).map(function (k) {
+        return `accounts.${k} as account__${k}`;
+      })
+    )
+    .then(R.map(layerify))
+    .then(casing.camelize);
+    [{ sum: obj.account.thisMonthIncome }] = yield knex('vouchers')
+    .join('account_terms', 'vouchers.account_term_id', 'account_terms.id')
+    .where('vouchers.recipient_id', obj.entity.id)
+    .andWhere('account_terms.name', moment().format('YYYY-MM'))
+    .sum('amount');
+    [{ sum: obj.account.thisMonthExpense }] = yield knex('vouchers')
+    .join('account_terms', 'vouchers.account_term_id', 'account_terms.id')
+    .where('vouchers.payer_id', obj.entity.id)
+    .andWhere('account_terms.name', moment().format('YYYY-MM'))
+    .sum('amount');
+    res.json(obj);
     next();
   })
   .catch(function (err) {
@@ -126,20 +155,38 @@ var create = function (req, res, next) {
       },
       departmentId,
       contact,
+      account: {
+        thisMonthIncome,
+        thisMonthExpense,
+        income,
+        expense,
+        taxOffsetBalance
+      }
     } = req.body;
     return co(function *() {
+      let [accountTerm] = yield trx('account_terms')
+      .where('name', moment().format('YYYY-MM')).select('*');
+      if (!accountTerm) {
+        res.json(400, {
+          reason: '当月账期' + moment().format('YYYY-MM') + '尚未创建',
+        });
+        next();
+        return;
+      }
       let entity = (yield knex('entities')
                     .where('name', name)
                    .select('*'))[0];
       if (entity) {
         res.json(400, {
           fields: {
-            name: '已经存在该名称',
+            entity: {
+              name: '已经存在该名称',
+            }
           }
         });
         return;
       }
-      let [entity_id] = yield trx.insert({
+      let [entityId] = yield trx.insert({
         name,
         acronym,
         type: ENTITY_TYPES.TENANT,
@@ -148,13 +195,48 @@ var create = function (req, res, next) {
       .returning('id');
       let [id] = yield trx
       .insert({
-        entity_id,
+        entity_id: entityId,
         department_id: departmentId,
         contact: contact,
       })
       .into('tenants')
       .returning('id');
-      res.json({ id, entityId: entity_id });
+      yield trx.insert({
+        tenant_id: id,
+        income,
+        expense,
+        tax_offset_balance: taxOffsetBalance,
+      }).into('accounts');
+      // 创建两条特殊凭证
+      let [voucherSubjectPresetExpense] = yield trx('voucher_subjects')
+      .where('name', VOUCHER_SUBJECTS.PRESET_EXPENSE).select('*');
+      let [ voucherSubjectPresetIncome ] = yield trx('voucher_subjects')
+      .where('name', VOUCHER_SUBJECTS.PRESET_INCOME).select('*');
+      let [ voucherTypeCash ] = yield trx('voucher_types')
+      .where('name', VOUCHER_TYPES.CASH).select('*');
+      yield trx('vouchers').insert({
+        number: VOUCHER_SUBJECTS.PRESET_EXPENSE + '-承包人ID' + id,
+        amount: thisMonthExpense,
+        date: new Date(),
+        voucher_type_id: voucherTypeCash.id,
+        voucher_subject_id: voucherSubjectPresetExpense.id,
+        payer_id: entityId,
+        notes: `承包人${name}的初始当月支出`,
+        creator_id: req.user.id,
+        account_term_id: accountTerm.id,
+      });
+      yield trx('vouchers').insert({
+        number: VOUCHER_SUBJECTS.PRESET_INCOME + '-承包人ID' + id,
+        amount: thisMonthIncome,
+        date: new Date(),
+        voucher_type_id: voucherTypeCash.id,
+        voucher_subject_id: voucherSubjectPresetIncome.id,
+        recipient_id: entityId,
+        notes: `承包人${name}的初始当月收入`,
+        creator_id: req.user.id,
+        account_term_id: accountTerm.id,
+      });
+      res.json({ id });
       next();
     });
   })
@@ -169,9 +251,7 @@ router.post('/object', loginRequired, restify.bodyParser(), create);
 var updateObject = function (req, res, next) {
   co(function *() {
     let { id } = req.params;
-    let [tenant] = yield knex('tenants')
-    .where('id', id)
-    .select('*');
+    let [tenant] = yield knex('tenants').where('id', id).select('*');
     if (!tenant) {
       res.json(400, {
         message: '不存在该承包人',
@@ -246,5 +326,61 @@ var updateObject = function (req, res, next) {
 };
 
 router.put('/object/:id', loginRequired, restify.bodyParser(), updateObject);
+
+router.post('/object/:id/:action', loginRequired, function (req, res, next) {
+  let { id, action } = req.params;
+  return knex.transaction(function (trx) {
+    return co(function *() {
+      let [obj] = yield trx('tenants')
+      .where({ id }).then(casing.camelize);
+      if (!obj) {
+        res.json(404, {});
+        next();
+        return;
+      }
+      if (action == '补足抵税') {
+        let accountTermName = moment().format('YYYY-MM');
+        let [accountTerm] = yield trx('account_terms')
+        .where({ name: accountTermName });
+        if (!accountTerm) {
+          res.json(400, {
+            reason: '帐期' + accountTermName + '尚未创建!'
+          });
+          next();
+          return;
+        }
+        let [account] = yield trx('accounts').where('tenant_id', id)
+        .then(casing.camelize);
+        let [{ id: voucher_type_id }] = yield trx('voucher_types')
+        .where('name', VOUCHER_TYPES.BANK_VOUCHER);
+        let [{ id: voucher_subject_id }] = yield trx('voucher_subjects')
+        .where('name', VOUCHER_SUBJECTS.强制补足抵税);
+        let [{ id: recipient_id }] = yield trx('entities')
+        .where('name', ENTITY_TYPES.OWNER);
+        yield trx('vouchers').insert({
+          number: VOUCHER_SUBJECTS.强制补足抵税 + '-' + moment().format('YYYYMMDDHHmmSS'),
+          amount: -account.taxOffsetBalance,
+          date: new Date(),
+          voucher_type_id,
+          voucher_subject_id,
+          payer_id: obj.entityId,
+          recipient_id,
+          notes: '强制补足抵税差额',
+          creator_id: req.user.id,
+          account_term_id: accountTerm.id
+        });
+        yield trx('accounts').update({ tax_offset_balance: 0 }).where({
+          tenant_id: id
+        });
+        res.send('');
+        next();
+      }
+    });
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
+});
 
 module.exports = { router, getObject, fullfill };

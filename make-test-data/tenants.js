@@ -61,6 +61,7 @@ var makeTenants = function () {
           tenant_id: tenantId,
           income,
           expense: income - chance.integer({ min: -1000, max: income }),
+          tax_offset_balance: chance.integer({ min: -10000, max: 10000 }),
         };
       })
     );

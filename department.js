@@ -35,10 +35,18 @@ router.post(
 );
 
 router.get('/list', loginRequired, function (req, res, next) {
-  knex('departments').select('*')
-  .then(function (list) {
-    res.json({ data: casing.camelize(list) });
+  return co(function *() {
+    let data = yield knex('departments').select('*').then(casing.camelize);
+    for (let obj of data) {
+      [obj.tenant] = yield knex('tenants').where({ department_id: obj.id })
+      .select('*').then(casing.camelize);
+    }
+    res.json({ data });
     next();
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
   });
 });
 
