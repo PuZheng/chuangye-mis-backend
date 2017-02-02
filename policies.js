@@ -16,6 +16,7 @@ exports[ROLES.CASHIER] = new Set([
   'edit.payment_record',
   'edit.account_term',
   'edit.department',
+  'edit.chemical_supplier',
 ]);
 exports[ROLES.ADMIN] = new Set([
   'edit.department',

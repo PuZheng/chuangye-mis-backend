@@ -17,3 +17,4 @@ exec('./make-test-data/meters.js');
 exec('./make-test-data/meter-readings.js');
 exec('./make-test-data/store-orders.js');
 exec('./make-test-data/partners.js');
+exec('./make-test-data/chemical-suppliers.js' + (argv.q? ' -n 16': ''));
