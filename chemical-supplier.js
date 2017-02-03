@@ -15,14 +15,14 @@ var {
 } = require('./const');
 
 router.get('/list', restify.queryParser(), function (req, res, next) {
-  let q = knex('chemical_suppliers');
+  let q = knex('chemical_suppliers')
+  .join('entities', 'chemical_suppliers.entity_id', '=', 'entities.id');
   let { kw, page, page_size } = req.params;
 
   return co(function *() {
     if (kw) {
       kw = kw.toUpperCase();
       q
-      .join('entities', 'chemical_suppliers.entity_id', '=', 'entities.id')
       .whereRaw('UPPER(entities.name) like ?', kw + '%')
       .orWhere(knex.raw('UPPER(entities.acronym) like ?', kw + '%'));
     }
@@ -31,7 +31,7 @@ router.get('/list', restify.queryParser(), function (req, res, next) {
     if (page && page_size) {
       q.offset((page - 1) * page_size).limit(page_size);
     }
-    let data = q.select(
+    let data = yield q.select(
       ...Object.keys(chemicalSuppilerModel).map(it => `chemical_suppliers.${it} as ${it}`),
       ...Object.keys(entityModel).map(it => `entities.${it} as entity__${it}`)
     )
