@@ -47,5 +47,4 @@ Session.vim
 
 *.pem
 development.json
-.lvimrc
 frontend/
