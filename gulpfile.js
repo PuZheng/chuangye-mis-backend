@@ -4,7 +4,10 @@ var eslint = require('gulp-eslint');
 var rollup = require('rollup').rollup;
 var babel = require('rollup-plugin-babel');
 var includePaths = require('rollup-plugin-includepaths');
-
+var inquirer = require('inquirer');
+var conflict = require('gulp-conflict');
+var template = require('gulp-template');
+var rename = require('gulp-rename');
 
 gulp.task('serve', function() {
   var options = {
@@ -83,6 +86,28 @@ gulp.task('rollup', function () {
       }),
     ]
   );
+});
+
+gulp.task('gen-app', function (done) {
+  inquirer.prompt([
+    {
+      type: 'input',
+      name: '模块名称',
+      message: '输入模块名称, 形如"foo-bar"',
+    },
+  ]).then(function (answers) {
+    gulp.src(__dirname + '/templates/app.js')
+    .pipe(template(answers))
+    .pipe(rename(function (path) {
+      path.basename = answers.模块名称;
+    }))
+    .pipe(conflict('./'))
+    .pipe(gulp.dest('./'))
+    .on('end', function () {
+      done();
+    })
+    .resume();
+  });
 });
 
 gulp.task('default', ['serve']);

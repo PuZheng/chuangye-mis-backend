@@ -9,6 +9,7 @@ exports.ENTITY_TYPES = {
   CUSTOMER: '客户',
   TENANT: '承包人',
   OWNER: '业主',
+  CHEMICAL_SUPPLIER: '化学品供应商'
 };
 
 exports.STORE_ORDER_DIRECTIONS = {

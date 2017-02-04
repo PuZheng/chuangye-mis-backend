@@ -1,0 +1,52 @@
+
+snippet app "app"
+var restify = require('restify');
+var Router = require('restify-router').Router;
+var knex = require('./knex');
+var router = new Router();
+
+module.exports = { router };
+endsnippet
+
+priority 100
+snippet	get "get"
+router.get('$1', $2function (req, res, next) {
+  $3
+});
+endsnippet
+
+snippet	put "put"
+router.put('$1', $2function (req, res, next) {
+  $3
+});
+endsnippet
+
+snippet	post "post"
+router.post('$1', $2function (req, res, next) {
+  $3
+});
+endsnippet
+
+snippet	del "del"
+router.del('$1', $2function (req, res, next) {
+  $3
+});
+endsnippet
+
+snippet co
+co(function *() {
+  $1
+})
+.catch(function (err) {
+  res.log.error({ err });
+  next(err);
+});
+endsnippet
+
+snippet trx
+knex.transaction(function (trx) {
+  $1
+});
+endsnippet
+
+# vim:ft=snippets:

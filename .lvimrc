@@ -1,0 +1,5 @@
+echo ">v.v<"
+:call add(g:UltiSnipsSnippetDirectories, getcwd().'/UltiSnips')
+au BufEnter,BufNew *.js set filetype=typescript
+au BufEnter,BufNew *.js UltiSnipsAddFiletypes javascript
+let g:syntastic_typescript_checkers = ['eslint']

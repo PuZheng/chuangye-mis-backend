@@ -157,6 +157,12 @@ exports.store_orders = {
   customer_id: t => t.integer('customer_id').references('entities.id'),
 };
 
+exports.chemical_suppliers = {
+  id: t => t.increments(),
+  entity_id: t => t.integer('entity_id').references('entities.id').notNullable(),
+  contact: t => t.string('contact'),
+};
+
 
 exports.settings = {
   id: t => t.increments(),
@@ -266,3 +272,4 @@ exports.accounts = {
   tax_offset_balance: t => t.specificType('tax_offset_balance', 'double precision')
   .notNullable().defaultTo(0),
 };
+
