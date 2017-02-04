@@ -33,4 +33,20 @@ router.del('$1', $2function (req, res, next) {
 });
 endsnippet
 
+snippet co
+co(function *() {
+  $1
+})
+.catch(function (err) {
+  res.log.error({ err });
+  next(err);
+});
+endsnippet
+
+snippet trx
+knex.transaction(function (trx) {
+  $1
+});
+endsnippet
+
 # vim:ft=snippets:

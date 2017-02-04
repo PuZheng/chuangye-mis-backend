@@ -1,11 +1,13 @@
 var restify = require('restify');
 var { Router } = require('restify-router');
 var knex = require('./knex');
-var router = new Router();
 var co = require('co');
 var layerify = require('./utils/layerify');
 var R = require('ramda');
 var casing = require('casing');
+var loginRequired = require('./login-required');
+var router = new Router();
+
 var {
   chemical_suppliers: chemicalSuppilerModel,
   entities: entityModel
@@ -71,6 +73,93 @@ router.get('/hints/:kw', function (req, res, next) {
   .catch(function (err) {
     res.log.error({ err });
     next(err);
+  });
+});
+
+router.post(
+  '/object', loginRequired, restify.bodyParser(),
+  function (req, res, next) {
+    let {
+      entity: {
+        name,
+        acronym
+      },
+      contact,
+    } = req.body;
+    return knex.transaction(function (trx) {
+      return co(function *() {
+        let [entity_id] = yield trx.insert({
+          name, acronym, type: CHEMICAL_SUPPLIER,
+        }).into('entities')
+        .returning('id');
+        let [id] = yield trx.insert({
+          entity_id,
+          contact,
+        }).into('chemical_suppliers')
+        .returning('id');
+        res.json({ id });
+        next();
+      })
+      .catch(function (err) {
+        res.log.error({ err });
+        next(err);
+      });
+    });
+  }
+);
+
+router.get('/object/:id', function (req, res, next) {
+  let { id } = req.params;
+  knex('chemical_suppliers')
+  .join('entities', 'entities.id', 'chemical_suppliers.entity_id')
+  .where('chemical_suppliers.id', id)
+  .select(
+    ...Object.keys(chemicalSuppilerModel).map(function (it) {
+      return `chemical_suppliers.${it} as ${it}`;
+    }),
+    ...Object.keys(entityModel).map(function (it) {
+      return `entities.${it} as entity__${it}`;
+    })
+  )
+  .then(R.map(layerify))
+  .then(function ([obj]) {
+    res.json(casing.camelize(obj));
+    next();
+  })
+  .catch(function (err) {
+    res.log.error({ err });
+    next(err);
+  });
+});
+
+router.put('/object/:id', restify.bodyParser(), function (req, res, next) {
+  let { id } = req.params;
+  let {
+    entity: {
+      name, acronym
+    },
+    contact
+  } = req.body;
+  knex.transaction(function (trx) {
+    return co(function *() {
+      let [obj] = yield trx('chemical_suppliers').where({ id })
+      .then(casing.camelize);
+      if (!obj) {
+        res.send(404, '');
+        next();
+        return;
+      }
+      yield trx('entities').update({
+        name, acronym
+      }).where({ id: obj.entityId });
+      yield trx('chemical_suppliers').update({ contact });
+      res.json({ id });
+      next();
+    })
+    .catch(function (err) {
+      res.log.error({ err });
+      next(err);
+    });
   });
 });
 
