@@ -42,6 +42,7 @@
     "chalk": "^1.1.3",
     "chance": "^1.0.4",
     "gulp": "^3.9.1",
+    "gulp-chmod": "^2.0.0",
     "gulp-conflict": "^0.4.0",
     "gulp-eslint": "^3.0.1",
     "gulp-nodemon": "^2.1.0",

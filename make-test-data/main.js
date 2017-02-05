@@ -9,6 +9,7 @@ exec('./make-test-data/users.js');
 exec('./make-test-data/account-terms.js');
 exec('./make-test-data/entities.js');
 exec('./make-test-data/store-subjects.js');
+exec('./make-test-data/plants.js' + (argv.q? ' -n 1': ''));
 exec('./make-test-data/departments.js' + (argv.q? ' -n 1': ''));
 exec('./make-test-data/tenants.js');
 exec('./make-test-data/invoices.js' + (argv.q? ' -n 16': ''));
