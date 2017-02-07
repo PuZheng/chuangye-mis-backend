@@ -96,7 +96,11 @@ gulp.task('gen-app', function (done) {
       type: 'input',
       name: '模块名称',
       message: '输入模块名称, 形如"foo-bar"',
-    },
+    }, {
+      type: 'input',
+      name: '表名称',
+      message: '输入表名称'
+    }
   ]).then(function (answers) {
     gulp.src(__dirname + '/templates/app.js')
     .pipe(template(answers))

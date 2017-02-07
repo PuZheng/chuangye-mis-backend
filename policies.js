@@ -19,7 +19,12 @@ exports[ROLES.CASHIER] = new Set([
   'edit.chemical_supplier',
 ]);
 exports[ROLES.ADMIN] = new Set([
+  'view.invoice.list',
+  'manage.store',
+  'view.voucher.list',
   'edit.department',
+  'edit.plant',
+  'view.tenant.list',
   'edit.settings',
   'edit.meter',
   'edit.meter_type',
@@ -28,7 +33,10 @@ exports[ROLES.ADMIN] = new Set([
   'edit.voucher_subject',
   'edit.user',
   'edit.store_subject',
-  'edit.partner',
+  'edit.customer',
+  'edit.supplier',
+  'edit.chemical_supplier',
   'edit.meter_reading',
-  'edit.payment_record'
+  'edit.payment_record',
+  'edit.charge_bill'
 ]);
