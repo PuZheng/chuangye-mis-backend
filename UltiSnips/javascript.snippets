@@ -49,4 +49,16 @@ knex.transaction(function (trx) {
 });
 endsnippet
 
+snippet count
+let [{ count }] = yield ${1:knex}('$2').where($3).count();
+endsnippet
+
+snippet update "with returning"
+let [$1] = yield trx('$2').update($3).where($4).returning($5);
+endsnippet
+
+snippet update "without returning"
+yield trx('$2').update($3).where($4);
+endsnippet
+
 # vim:ft=snippets:

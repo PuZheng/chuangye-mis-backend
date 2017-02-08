@@ -33,7 +33,7 @@ let apps = [
   'department', 'tenant', 'settings', 'meter', 'user', 'store-order',
   'meter-type', 'charge-bill', 'partner', 'account', 'account-book',
   'department-charge-bill', 'meter-reading', 'payment-record', 'operating-report',
-  'chemical-supplier'
+  'chemical-supplier', 'plant'
 ];
 for (let app of apps) {
   require('./' + app).router.applyRoutes(server, '/' + app);

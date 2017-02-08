@@ -123,10 +123,17 @@ exports.vouchers = {
   .references('account_terms.id').notNullable(),
 };
 
+exports.plants = {
+  id: t => t.increments(),
+  name: t => t.string('name').notNullable().unique(),
+  area: t => t.float('area').notNullable(),
+};
+
 exports.departments = {
   id: t => t.increments(),
   name: t => t.string('name').unique().notNullable(),
   acronym: t => t.string('acronym'),
+  plant_id: t => t.integer('plant_id').references('plants.id').notNullable()
 };
 
 exports.tenants = {

@@ -39,10 +39,17 @@ var could = function could(user, need) {
 
 var couldCb = function couldCb(req, res, next) {
   let tests = req.body.tests;
-  res.json({
-    data: tests.map(t => R.isArrayLike(t)? t: [t])
-    .map(t => could(req.user, ...t))
-  });
+  let data = R.ifElse(
+    R.identity,
+    function (tests) {
+      return tests.map(t => R.isArrayLike(t)? t: [t])
+      .map(t => could(req.user, ...t));
+    },
+    function () {
+      return Array.from(policies[req.user.role]);
+    }
+  )(tests);
+  res.json({ data });
   next();
 };
 

@@ -8,6 +8,8 @@ var inquirer = require('inquirer');
 var conflict = require('gulp-conflict');
 var template = require('gulp-template');
 var rename = require('gulp-rename');
+var casing = require('casing');
+const chmod = require('gulp-chmod');
 
 gulp.task('serve', function() {
   var options = {
@@ -94,7 +96,11 @@ gulp.task('gen-app', function (done) {
       type: 'input',
       name: '模块名称',
       message: '输入模块名称, 形如"foo-bar"',
-    },
+    }, {
+      type: 'input',
+      name: '表名称',
+      message: '输入表名称'
+    }
   ]).then(function (answers) {
     gulp.src(__dirname + '/templates/app.js')
     .pipe(template(answers))
@@ -103,6 +109,40 @@ gulp.task('gen-app', function (done) {
     }))
     .pipe(conflict('./'))
     .pipe(gulp.dest('./'))
+    .on('end', function () {
+      done();
+    })
+    .resume();
+  });
+});
+
+gulp.task('gen-test-data', function (done) {
+  inquirer.prompt([
+    {
+      type: 'input',
+      name: '表名称',
+      message: '输入表名称',
+    },
+  ]).then(function (answers) {
+    gulp.src(__dirname + '/templates/objects.js')
+    .pipe(template(Object.assign(answers, {
+      capitalize: function (s) {
+        return s.charAt(0).toUpperCase() + s.slice(1);
+      },
+      camelize: casing.camelize,
+    })))
+    .pipe(rename(function (path) {
+      path.basename = answers.表名称.replace('_', '-');
+    }))
+    .pipe(conflict('./make-test-data'))
+    .pipe(chmod({
+      owner: {
+        read: true,
+        write: true,
+        execute: true
+      },
+    }))
+    .pipe(gulp.dest('./make-test-data'))
     .on('end', function () {
       done();
     })
