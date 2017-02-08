@@ -5,6 +5,12 @@ const router = new Router();
 const loginRequired = require('./login-required');
 const casing = require('casing');
 const co = require('co');
+const R = require('ramda');
+const layerify = require('./utils/layerify.js');
+const {
+  departments: departmentDef,
+  tenants: tenantDef
+} = require('./models.js');
 
 router.get(
   '/list', loginRequired, restify.queryParser(),
@@ -19,8 +25,21 @@ router.get(
       }
       let data = yield q.then(casing.camelize);
       for (let it of data) {
-        let departments = yield knex('departments').where({ plant_id: it.id });
+        let departments = yield knex('departments')
+        .leftOuterJoin('tenants', 'tenants.department_id', 'departments.id')
+        .where({ 'departments.plant_id': it.id })
+        .select([
+          ...Object.keys(departmentDef).map(function (it) {
+            return `departments.${it} as ${it}`;
+          }),
+          ...Object.keys(tenantDef).map(function (it) {
+            return `tenants.${it} as tenant__${it}`;
+          })
+        ])
+        .then(R.map(layerify))
+        .then(casing.camelize);
         it.departmentCnt = departments.length;
+        it.leasedDepartmentCnt = departments.filter(R.prop('tenant')).length;
       }
       res.json({ totalCnt, data });
       next();

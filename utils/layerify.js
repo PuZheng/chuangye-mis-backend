@@ -1,6 +1,9 @@
 var layerify = function (obj, sep='__') {
   let ret = {};
   for (var k in obj) {
+    if (obj[k] === null) {
+      continue;
+    }
     let t = k.split(sep);
     let groups = t.slice(0, -1);
     let field = t[t.length - 1];

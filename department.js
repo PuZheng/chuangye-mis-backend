@@ -21,7 +21,7 @@ router.post(
         });
       }
       let [id] = yield knex('departments').insert(
-        R.pick(Object.keys(departmentDef), casing.camelize(req.body))
+        R.pick(Object.keys(departmentDef), casing.snakeize(req.body))
       )
       .returning('id');
       res.send({id});
