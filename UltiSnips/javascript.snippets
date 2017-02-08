@@ -53,6 +53,10 @@ snippet count
 let [{ count }] = yield ${1:knex}('$2').where($3).count();
 endsnippet
 
+snippet select "sql select" b
+let $1 = yield ${1:knex}('$2').select(${3:'*'}).then(casing.camelize);
+endsnippet
+
 snippet update "with returning"
 let [$1] = yield trx('$2').update($3).where($4).returning($5);
 endsnippet
